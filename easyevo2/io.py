@@ -50,6 +50,10 @@ def save_tensor(
     # Ensure parent directory exists
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
+    # Move tensor to CPU before saving if it's on GPU
+    if tensor.is_cuda:
+        tensor = tensor.cpu()
+
     # Create a dict mapping tensor names to tensors
     tensors_dict = {tensor_name: tensor}
 
@@ -60,7 +64,7 @@ def save_tensor(
 def load_tensor(
     filepath: str | Path,
     tensor_name: str | None = None,
-    device: str | int | None = None,
+    device: str | torch.device | None = None,
 ) -> torch.Tensor | dict[str, torch.Tensor]:
     """
     Load a PyTorch tensor from the safetensors format.
@@ -102,6 +106,10 @@ def load_tensor(
         msg = f"No tensor file found at {filepath}"
         raise FileNotFoundError(msg)
 
+    # Set the device based on user preference or availability
+    if device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
     # If tensor_name is provided, load just that tensor
     if tensor_name is not None:
         with safe_open(filepath, framework="pt", device=device) as f:
@@ -111,7 +119,6 @@ def load_tensor(
             return f.get_tensor(tensor_name)
 
     # Otherwise load all tensors
-    device = "cpu" if device is None else device
     return load_file(filepath, device=device)
 
 
@@ -184,5 +191,114 @@ def save_embeddings(
     # Ensure parent directory exists
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
+    # Move embeddings to CPU before saving if they're on GPU
+    cpu_embeddings = {}
+    for key, tensor in embeddings.items():
+        if tensor.is_cuda:
+            cpu_embeddings[key] = tensor.cpu()
+        else:
+            cpu_embeddings[key] = tensor
+
     # Save the embeddings
-    save_file(embeddings, filepath, metadata)
+    save_file(cpu_embeddings, filepath, metadata)
+
+
+def get_optimal_device(
+    memory_required: float = 0, prefer_gpu: bool = True
+) -> torch.device:
+    """
+    Get the optimal device for tensor operations based on memory requirements.
+
+    Parameters
+    ----------
+    memory_required : float
+        Estimated memory required in GB. If the GPU has less memory, will use CPU.
+    prefer_gpu : bool
+        If True, prefer using GPU if available regardless of memory requirements.
+
+    Returns
+    -------
+    torch.device
+        The optimal device to use (CUDA or CPU).
+    """
+    # If CUDA is not available, return CPU
+    if not torch.cuda.is_available():
+        return torch.device("cpu")
+
+    # If no memory requirement or preference is GPU, use CUDA
+    if memory_required <= 0 or not prefer_gpu:
+        return torch.device("cuda")
+
+    # Check GPU memory availability
+    free_memory = []
+    for i in range(torch.cuda.device_count()):
+        total_memory = torch.cuda.get_device_properties(i).total_memory
+        reserved_memory = torch.cuda.memory_reserved(i)
+        free_memory.append((total_memory - reserved_memory) / 1e9)  # Convert to GB
+
+    # Find GPU with most free memory
+    if free_memory:
+        max_free_memory = max(free_memory)
+        best_gpu_index = free_memory.index(max_free_memory)
+
+        # If enough memory is available, use that GPU
+        if max_free_memory >= memory_required:
+            return torch.device(f"cuda:{best_gpu_index}")
+
+    # Default to CPU if no suitable GPU found
+    return torch.device("cpu")
+
+
+def batch_process_tensors(
+    tensors: list[torch.Tensor],
+    batch_size: int,
+    process_fn,
+    device: torch.device = None,
+) -> list:
+    """
+    Process tensors in batches to avoid GPU memory issues.
+
+    Parameters
+    ----------
+    tensors : list of torch.Tensor
+        List of tensors to process.
+    batch_size : int
+        Number of tensors to process at once.
+    process_fn : callable
+        Function to apply to each batch of tensors.
+    device : torch.device, optional
+        Device to move tensors to for processing.
+
+    Returns
+    -------
+    list
+        List of processed results.
+    """
+    results = []
+
+    # Use default device if none specified
+    if device is None:
+        device = get_optimal_device()
+
+    # Process in batches
+    for i in range(0, len(tensors), batch_size):
+        batch = tensors[i : i + batch_size]
+
+        # Move batch to target device
+        batch_on_device = [tensor.to(device) for tensor in batch]
+
+        # Process batch
+        with torch.no_grad():  # Use inference mode for efficiency
+            batch_results = process_fn(batch_on_device)
+
+        # Store results
+        if isinstance(batch_results, list):
+            results.extend(batch_results)
+        else:
+            results.append(batch_results)
+
+        # Clean up GPU memory if using CUDA
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+
+    return results
