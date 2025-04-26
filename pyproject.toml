@@ -1,0 +1,123 @@
+[project]
+name = "easyevo2"
+version = "0.1.0"
+description = "To use Evo2 easily in HPC"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = ["click>=8.1.8", "pyfastx>=2.2.0", "rich>=14.0.0", "safetensors>=0.5.3", "torch>=2.7.0", "typer>=0.15.2"]
+
+[project.urls]
+Homepage = "https://github.com/ylab-hi/EasyEvo2"
+Repository = "https://github.com/ylab-hi/EasyEvo2"
+Documentation = "https://github.com/ylab-hi/EasyEvo2"
+
+[project.scripts]
+easyevo2 = "easyevo2.__main__:app"
+
+[tool.ruff]
+line-length = 88
+fix = true
+
+[tool.ruff.lint]
+select = [
+	"E",      # pycodestyle
+	"W",      # pycodestyle
+	"F",      # Pyflakes
+	"B",      # flake8-bugbear
+	"C4",     # flake8-comprehensions
+	"D",      # flake8-docstrings
+	"D213",   # Augment NumPy docstring convention: Multi-line docstring summary should start at the second line
+	"D417",   # Augment NumPy docstring convention: Missing argument descriptions
+	"I",      # isort
+	"SIM",    # flake8-simplify
+	"TCH",    # flake8-type-checking
+	"TID",    # flake8-tidy-imports
+	"UP",     # pyupgrade
+	"PT",     # flake8-pytest-style
+	"RUF",    # Ruff-specific rules
+	"PTH",    # flake8-use-pathlib
+	"FA",     # flake8-future-annotations
+	"PIE",    # flake8-pie
+	"TD",     # flake8-todos
+	"TRY",    # tryceratops
+	"EM",     # flake8-errmsg
+	"FBT001", # flake8-boolean-trap
+]
+
+ignore = [
+	# Line length regulated by formatter
+	"E501",
+	# pydocstyle: http://www.pydocstyle.org/en/stable/error_codes.html
+	"D401", # Relax NumPy docstring convention: First line should be in imperative mood
+	# flake8-pytest-style:
+	"PT011", # pytest.raises({exception}) is too broad, set the match parameter or use a more specific exception
+	# flake8-simplify
+	"SIM102", # Use a single `if` statement instead of nested `if` statements
+	"SIM108", # Use ternary operator
+	# ruff
+	"RUF005", # unpack-instead-of-concatenating-to-collection-literal
+	# pycodestyle
+	# TODO: Remove errors below to further improve docstring linting
+	# Ordered from most common to least common errors.
+	"D105", # Missing docstring in magic method
+	"D100", # Missing docstring in public module
+	"D104", # Missing docstring in public package
+	# flake8-todos
+	"TD002", # Missing author in TODO
+	"TD003", # Missing issue link on the line following this TODO
+	# tryceratops
+	"TRY003", # Avoid specifying long messages outside the exception class
+	# Lints below are turned off because of conflicts with the ruff formatter
+	"D206",
+	"W191",
+	"W505",
+	"B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D100", "D102", "D103", "B018", "FBT001"]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 88
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.flake8-type-checking]
+strict = true
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+addopts = [
+	"--tb=short",
+	"--strict-config",
+	"--strict-markers",
+	"--import-mode=importlib",
+	# Default to running fast tests only. To run ALL tests, run: pytest -m ""
+	"-m not slow and not write_disk and not release and not docs and not hypothesis and not benchmark and not ci_only",
+]
+markers = ["ci_only: Tests that should only run on CI by default.", "debug: Tests that should be run on a Polars debug build.", "docs: Documentation code snippets", "release: Tests that should be run on a Polars release build.", "slow: Tests with a longer than average runtime.", "write_disk: Tests that write to disk"]
+filterwarnings = [
+	# Fail on warnings
+	"error",
+	# Allow debugging in an IPython console
+	"ignore:.*unrecognized arguments.*PyDevIPCompleter:DeprecationWarning",
+	# Ignore warnings issued by dependency internals
+	"ignore:.*is_sparse is deprecated.*:FutureWarning",
+	"ignore:FigureCanvasAgg is non-interactive:UserWarning",
+	"ignore:datetime.datetime.utcfromtimestamp\\(\\) is deprecated.*:DeprecationWarning",
+	"ignore:datetime.datetime.utcnow\\(\\) is deprecated.*:DeprecationWarning",
+	# Introspection under PyCharm IDE can generate this in Python 3.12
+	"ignore:.*co_lnotab is deprecated, use co_lines.*:DeprecationWarning",
+	"ignore:unclosed file.*:ResourceWarning",
+	# Ignore invalid warnings when running earlier versions of SQLAlchemy (we
+	# know they are invalid because our standard tests run the latest version)
+	"ignore:Deprecated API features detected.*:DeprecationWarning",
+]
+xfail_strict = true
