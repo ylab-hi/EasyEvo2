@@ -204,7 +204,7 @@ def save_embeddings(
 
 
 def get_optimal_device(
-    memory_required: float = 0, prefer_gpu: bool = True
+    memory_required: float = 0, *, prefer_gpu: bool = True
 ) -> torch.device:
     """
     Get the optimal device for tensor operations based on memory requirements.
@@ -253,7 +253,7 @@ def batch_process_tensors(
     tensors: list[torch.Tensor],
     batch_size: int,
     process_fn,
-    device: torch.device = None,
+    device: torch.device | None = None,
 ) -> list:
     """
     Process tensors in batches to avoid GPU memory issues.

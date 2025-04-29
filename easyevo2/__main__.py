@@ -1,10 +1,9 @@
-from enum import Enum
 from pathlib import Path
 from typing import Annotated
 
 import torch
 import typer
-from evo2 import Evo2
+from model import ModelType
 
 # define a command-line interface (CLI) using Typer
 # the cli include subcommands
@@ -12,15 +11,6 @@ app = typer.Typer(
     epilog="EasyEvo2 make life easier for you.\n",
     context_settings={"help_option_names": ["-h", "--help"]},
 )
-
-
-class ModelType(str, Enum):
-    """Enum for model types."""
-
-    # Define the model types
-    _1b = "1b"
-    _7b = "7b"
-    _40b = "40b"
 
 
 @app.command()
@@ -35,7 +25,7 @@ def embed(
     model=Annotated[
         ModelType,
         typer.Option(
-            ModelType._1b,
+            ModelType.evo2_7b,
             help="Model type to use for embedding.",
         ),
     ],
@@ -78,10 +68,8 @@ def embed(
     """Embed a FASTA or FASTQ file."""
     # Load the model
     device = torch.device(device)
-    model = Evo2(model).to(device)
 
-    # Read sequences from the file
-    sequences = get_seq_from_fx(filename)
+    sequences = ["ATCG"]
 
     # Process sequences in batches
     for batch in sequences:

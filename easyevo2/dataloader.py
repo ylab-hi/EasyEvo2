@@ -45,6 +45,7 @@ class FxDataset(Dataset):
         fx_file: Path | str,
         max_length: int | None = None,
         transform: Callable | None = None,
+        *,
         preload: bool = False,
     ):
         self.fx_file = str(fx_file)

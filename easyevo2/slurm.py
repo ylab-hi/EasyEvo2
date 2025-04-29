@@ -1,3 +1,6 @@
+from pathlib import Path
+
+
 def create_slurm_script(
     job_name: str,
     output_file: str,
@@ -98,7 +101,7 @@ def create_slurm_script(
 
     # Write the script to a file
     script_path = f"{job_name}.slurm"
-    with open(script_path, "w") as script_file:
+    with Path(script_path).open("w") as script_file:
         script_file.write(slurm_script)
 
     return script_path
