@@ -99,7 +99,7 @@ def embed(
     # Save the embeddings to the output file
     for layer in layer_name:
         metadata = {
-            "model_type": str(model_type),
+            "model_type": model_type.value,
             "layer_name": layer,
             "batch_size": str(batch_size),
             "output": str(output),

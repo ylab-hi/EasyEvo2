@@ -32,16 +32,16 @@ format: ## Format code automatically with ruff
 	ruff check --fix .
 
 test: ## Run tests (excluding slow tests)
-	uv pytest -v $(TESTS_DIR)
+	uv run pytest -v $(TESTS_DIR)
 
 test-all: ## Run all tests including slow tests
-	uv pytest -v $(TESTS_DIR) -m ""
+	uv run pytest -v $(TESTS_DIR) -m ""
 
 coverage: ## Run tests with coverage report
-	uv pytest --cov=$(PACKAGE) --cov-report=html --cov-report=term $(TESTS_DIR)
+	uv run pytest --cov=$(PACKAGE) --cov-report=html --cov-report=term $(TESTS_DIR)
 
 build: ## Build package
-	uv  build
+	uv build
 
 install: ## Install package
 	uv sync -U

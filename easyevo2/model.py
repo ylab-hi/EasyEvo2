@@ -16,7 +16,7 @@ class ModelType(str, Enum):
         return [model.value for model in cls]
 
 
-def load_model(model_type: str):
+def load_model(model_type: ModelType):
     """
     Load the specified model type.
 
@@ -35,8 +35,7 @@ def load_model(model_type: str):
         or model_type == ModelType.evo2_40b
     ):
         from evo2 import Evo2
-
-        return Evo2(model_type)
+        return Evo2(model_type.value)
     else:
         msg = f"Unknown model type: {model_type}"
         raise ValueError(msg)
