@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "easyevo2"
 version = "0.1.0"
@@ -5,7 +9,7 @@ description = "To use Evo2 easily in HPC"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
-dependencies = ["click>=8.1.8", "pyfastx>=2.2.0", "rich>=14.0.0", "safetensors>=0.5.3", "torch>=2.7.0", "typer>=0.15.2"]
+dependencies = ["click>=8.1.8", "numpy>=2.2.5", "pyfastx>=2.2.0", "rich>=14.0.0", "safetensors>=0.5.3", "torch>=2.7.0", "typer>=0.15.2"]
 
 [project.urls]
 Homepage = "https://github.com/ylab-hi/EasyEvo2"

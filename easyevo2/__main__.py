@@ -3,7 +3,10 @@ from typing import Annotated
 
 import torch
 import typer
-from model import ModelType
+
+from easyevo2.dataloader import get_seq_from_fx_to_dict
+from easyevo2.io import save_embeddings
+from easyevo2.model import ModelType, load_model
 
 # define a command-line interface (CLI) using Typer
 # the cli include subcommands
@@ -15,83 +18,115 @@ app = typer.Typer(
 
 @app.command()
 def embed(
-    filename=Annotated[
+    filename: Annotated[
         Path,
         typer.Argument(
             ...,
             help="Path to the FASTA or FASTQ file.",
         ),
     ],
-    model=Annotated[
+    model_type: Annotated[
         ModelType,
         typer.Option(
-            ModelType.evo2_7b,
             help="Model type to use for embedding.",
         ),
-    ],
-    layer_name=Annotated[
-        str,
+    ] = ModelType.evo2_7b,
+    layer_name: Annotated[
+        list[str] | None,
         typer.Option(
-            "blocks.28.mlp.l3",
             help="Layer name to extract embeddings from.",
         ),
-    ],
-    batch_size=Annotated[
+    ] = None,
+    batch_size: Annotated[
         int,
         typer.Option(
-            32,
             help="Batch size for processing sequences.",
         ),
-    ],
-    device=Annotated[
+    ] = 1,
+    device: Annotated[
         str,
         typer.Option(
-            "cuda:0",
             help="Device to run the model on (e.g., 'cuda:0' or 'cpu').",
         ),
-    ],
-    max_length=Annotated[
+    ] = "cuda:0",
+    max_length: Annotated[
         int,
         typer.Option(
-            2000,
             help="Maximum sequence length to process.",
         ),
-    ],
-    output=Annotated[
-        Path,
+    ] = 1024,
+    output: Annotated[
+        Path | None,
         typer.Option(
-            None,
             help="Output file to save the embeddings.",
         ),
-    ],
+    ] = None,
 ):
     """Embed a FASTA or FASTQ file."""
     # Load the model
-    device = torch.device(device)
+    if layer_name is None:
+        layer_name = ["blocks.28.mlp.l3"]
 
-    sequences = ["ATCG"]
+    if device.startswith("cuda") and torch.cuda.is_available():
+        # Check if the specified GPU is available
+        gpu_index = int(device.split(":")[1])
+        if gpu_index >= torch.cuda.device_count():
+            msg = f"GPU index {gpu_index} is out of range. Available GPUs: {torch.cuda.device_count()}"
+            raise ValueError(msg)
+
+    model = load_model(model_type)
+    sequences = get_seq_from_fx_to_dict(
+        filename,
+    )
+
+    embeddings_with_name = {}
 
     # Process sequences in batches
-    for batch in sequences:
+    for name, seq in sequences.items():
         # Tokenize and process the sequence
         input_ids = (
             torch.tensor(
-                model.tokenizer.tokenize(batch),
+                model.tokenizer.tokenize(seq),
                 dtype=torch.int,
             )
             .unsqueeze(0)
             .to(device)
         )
 
-        # Get embeddings
-        outputs, embeddings = model(
-            input_ids, return_embeddings=True, layer_names=[layer_name]
-        )
+        with torch.inference_mode():
+            # Get embeddings
+            outputs, embeddings = model(
+                input_ids, return_embeddings=True, layer_names=layer_name
+            )
 
-        # Save embeddings to output file if specified
-        if output:
-            with open(output, "a") as f:
-                f.write(f"{batch}\t{embeddings[layer_name].cpu().numpy()}\n")
+            # Store the embeddings
+            embeddings_with_name[name] = embeddings
+
+    # Save the embeddings to the output file
+    for layer in layer_name:
+        metadata = {
+            "model_type": str(model_type),
+            "layer_name": layer,
+            "batch_size": str(batch_size),
+            "max_length": str(max_length),
+            "output": str(output),
+        }
+
+        if output is None:
+            output = Path(filename).with_suffix(f".{model_type}.{layer}.safetensors")
+        else:
+            output = Path(output).with_suffix(f".{model_type}.{layer}.safetensors")
+
+        layer_embeddings = {
+            name: embeddings[layer].cpu()
+            for name, embeddings in embeddings_with_name.items()
+        }
+
+        save_embeddings(
+            layer_embeddings,
+            output,
+            metadata=metadata,
+        )
 
 
 if __name__ == "__main__":

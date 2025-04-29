@@ -24,6 +24,24 @@ def get_seq_from_fx(filename: Path | str):
     yield from fx
 
 
+def get_seq_from_fx_to_dict(filename: Path | str) -> dict[str, str]:
+    """
+    Read a FASTA or FASTQ file using pyfastx.
+
+    Parameters
+    ----------
+    filename : Path or str
+        Path to the FASTA or FASTQ file.
+
+    Yields
+    ------
+    tuple
+        Name, sequence, and quality score (if FASTQ) for each entry.
+    """
+    fx = pyfastx.Fastx(filename)
+    return {name: seq for name, seq, _ in fx}
+
+
 class FxDataset(Dataset):
     """
     PyTorch Dataset for FASTA/FASTQ files.
