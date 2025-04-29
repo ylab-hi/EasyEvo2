@@ -2,7 +2,7 @@ from pathlib import Path
 
 import torch
 
-from easyevo2.dataloader import get_seq_from_fx_to_dict
+from easyevo2.dataloader import get_seq_from_fx, get_seq_from_fx_to_dict
 from easyevo2.io import save_embeddings
 
 
@@ -25,6 +25,13 @@ class ToyModel:
         return output, embeddings
 
 
+def test_read_fx():
+    test_file = "tests/data/test.fa"
+    sequences_generator = get_seq_from_fx(test_file)
+    sequences = list(sequences_generator)
+    assert len(sequences) == 14
+
+
 def test_model_embed():
     """Test the model loading and embedding generation."""
     # Create a toy model
@@ -32,8 +39,8 @@ def test_model_embed():
     model_type = "toy_model"
     layer_name = ["blocks.28.mlp.l3"]
     output = "tests/data/test_embeddings"
-    test_file = "tests/data/test.fasta"
-    sequences = get_seq_from_fx_to_dict()
+    test_file = "tests/data/test.fa"
+    sequences = get_seq_from_fx(test_file)
     embeddings_with_name = {}
 
     # Process sequences in batches

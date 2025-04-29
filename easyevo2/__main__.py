@@ -4,7 +4,7 @@ from typing import Annotated
 import torch
 import typer
 
-from easyevo2.dataloader import get_seq_from_fx_to_dict
+from easyevo2.dataloader import get_seq_from_fx
 from easyevo2.io import save_embeddings
 from easyevo2.model import ModelType, load_model
 
@@ -75,7 +75,7 @@ def embed(
             raise ValueError(msg)
 
     model = load_model(model_type)
-    sequences = get_seq_from_fx_to_dict(
+    sequences = get_seq_from_fx(
         filename,
     )
 

@@ -125,3 +125,8 @@ filterwarnings = [
 	"ignore:Deprecated API features detected.*:DeprecationWarning",
 ]
 xfail_strict = true
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
