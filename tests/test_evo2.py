@@ -1,65 +1,20 @@
 from pathlib import Path
-from typing import Annotated
 
+import pytest
 import torch
-import typer
 
 from easyevo2.dataloader import get_seq_from_fx
 from easyevo2.io import save_embeddings
 from easyevo2.model import ModelType, load_model
 
-# define a command-line interface (CLI) using Typer
-# the cli include subcommands
-app = typer.Typer(
-    epilog="EasyEvo2 make life easier for you.\n",
-    context_settings={"help_option_names": ["-h", "--help"]},
-)
 
-
-@app.command()
-def embed(
-    filename: Annotated[
-        Path,
-        typer.Argument(
-            ...,
-            help="Path to the FASTA or FASTQ file.",
-        ),
-    ],
-    model_type: Annotated[
-        ModelType,
-        typer.Option(
-            help="Model type to use for embedding.",
-        ),
-    ] = ModelType.evo2_7b,
-    layer_name: Annotated[
-        list[str] | None,
-        typer.Option(
-            help="Layer name to extract embeddings from.",
-        ),
-    ] = None,
-    batch_size: Annotated[
-        int,
-        typer.Option(
-            help="Batch size for processing sequences.",
-        ),
-    ] = 1,
-    device: Annotated[
-        str,
-        typer.Option(
-            help="Device to run the model on (e.g., 'cuda:0' or 'cpu').",
-        ),
-    ] = "cuda:0",
-    output: Annotated[
-        Path | None,
-        typer.Option(
-            help="Output file to save the embeddings.",
-        ),
-    ] = None,
-):
-    """Embed a FASTA or FASTQ file."""
-    # Load the model
-    if layer_name is None:
-        layer_name = ["blocks.28.mlp.l3"]
+@pytest.mark.slow
+def test_evo2():
+    model_type = ModelType.evo2_7b
+    layer_name = ["blocks.28.mlp.l3"]
+    device = "cuda:0"
+    filename = "tests/data/test.fa"
+    output = "tests/data/test_evo2_embeddings"
 
     if device.startswith("cuda") and torch.cuda.is_available():
         # Check if the specified GPU is available
@@ -101,7 +56,6 @@ def embed(
         metadata = {
             "model_type": model_type.value,
             "layer_name": layer,
-            "batch_size": str(batch_size),
             "output": str(output),
         }
 
@@ -124,16 +78,3 @@ def embed(
             layer_output,
             metadata=metadata,
         )
-
-
-@app.command()
-def list_models():
-    """List all available model types."""
-    models = ModelType.list_models()
-    for model in models:
-        print(model)
-
-
-if __name__ == "__main__":
-    # run the CLI
-    app()

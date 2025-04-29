@@ -35,6 +35,7 @@ def load_model(model_type: ModelType):
         or model_type == ModelType.evo2_40b
     ):
         from evo2 import Evo2
+
         return Evo2(model_type.value)
     else:
         msg = f"Unknown model type: {model_type}"

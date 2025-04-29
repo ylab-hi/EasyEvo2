@@ -8,7 +8,7 @@ A Python toolkit for easily using Evo2 models in bioinformatics workflows, parti
 
 ## Description
 
-EasyEvo2 provides a simplified interface to Evo2 foundation models for sequence embedding. 
+EasyEvo2 provides a simplified interface to Evo2 foundation models for sequence embedding.
 It enables biologists and bioinformaticians to efficiently extract embeddings from DNA, RNA, or protein sequences without extensive deep learning expertise. It's specially designed to work well in High-Performance Computing (HPC) environments.
 
 # Installation
