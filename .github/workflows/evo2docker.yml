@@ -2,7 +2,7 @@ name: docker-evo2
 
 on:
   schedule:
-    - cron: "0 9,21 * * *"
+    - cron: "0 9 * * *"
   workflow_dispatch:
 
 jobs:
