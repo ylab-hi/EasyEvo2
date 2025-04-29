@@ -32,13 +32,27 @@ pip install .
 easyevo2 embed input.fa
 
 # Specify a different model and specific layer
-easyevo2 embed input.fa --model-type evo2_40b --layer-name blocks.28.mlp.l3 
+easyevo2 embed input.fa --model-type evo2_40b --layer-name blocks.28.mlp.l3
 
 # Specify a different model and multiple layers
 easyevo2 embed input.fa --model-type evo2_40b --layer-name blocks.28.mlp.l3 blocks.28.mlp.l2
 
 # Save to a specific output file
 easyevo2 embed input.fa --output my_embeddings
+```
+
+The output will be a safetensor file containing the embeddings for each sequence in the input file.
+We can load the embeddings using the `load_tensor` function:
+
+```python
+from easyevo2 import load_tensor
+
+embeddings = load_tensor("my_embeddings.mode.layer.safetensors")
+print(embeddings)
+# Output: {
+# "seq1": torch.tensor([...]),
+# "seq2": torch.tensor([...]),
+# }
 ```
 
 ## Development
