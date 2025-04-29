@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "easyevo2"
-version = "0.1.0"
+version = "0.1.1"
 description = "To use Evo2 easily in HPC"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -127,7 +127,4 @@ filterwarnings = [
 xfail_strict = true
 
 [dependency-groups]
-dev = [
-    "ipdb>=0.13.13",
-    "pytest>=8.3.5",
-]
+dev = ["ipdb>=0.13.13", "pytest>=8.3.5"]
