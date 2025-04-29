@@ -64,7 +64,7 @@ def create_slurm_script(
     # Add optional parameters if provided
     if gpu_count > 0:
         slurm_script += (
-            f"#SBATCH --gres=gpu:{gpu_type+',' if gpu_type else ''}{gpu_count}\n"
+            f"#SBATCH --gres=gpu:{gpu_type + ',' if gpu_type else ''}{gpu_count}\n"
         )
 
     if email and email_type:
