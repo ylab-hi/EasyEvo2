@@ -125,6 +125,12 @@ def embed(
             metadata=metadata,
         )
 
+@app.command()
+def list_models():
+    """List all available model types."""
+    models = ModelType.list_models()
+    for model in models:
+        print(model)
 
 if __name__ == "__main__":
     # run the CLI
