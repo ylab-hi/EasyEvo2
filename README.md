@@ -21,10 +21,6 @@ pip install easyevo2
 git clone https://github.com/ylab-hi/EasyEvo2.git
 cd EasyEvo2
 pip install .
-
-# Or use self-contain and monolithic installation
-wget https://raw.githubusercontent.com/ylab-hi/EasyEvo2/refs/heads/main/easyevo2.pyz
-python easyevo2.pyz embed input.fa
 ```
 
 ## Usage
@@ -32,17 +28,14 @@ python easyevo2.pyz embed input.fa
 ### Basic Usage
 
 ```bash
-# Embed sequences from a FASTA file using the default model (evo2_7b)
+# Embed sequences from a FASTA/FASTQ file using the default model (evo2_7b)
 easyevo2 embed input.fa
 
-# Specify a different model
-easyevo2 embed input.fa --model-type evo2_40b
+# Specify a different model and specific layer
+easyevo2 embed input.fa --model-type evo2_40b --layer-name blocks.28.mlp.l3 
 
-# Extract embeddings from a specific layer
-easyevo2 embed input.fa --layer-name blocks.28.mlp.l3 --layer-name  blocks.28.mlp.l3
-
-# Use CPU instead of GPU
-easyevo2 embed input.fa --device cpu
+# Specify a different model and multiple layers
+easyevo2 embed input.fa --model-type evo2_40b --layer-name blocks.28.mlp.l3 blocks.28.mlp.l2
 
 # Save to a specific output file
 easyevo2 embed input.fa --output my_embeddings
