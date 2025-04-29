@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "To use Evo2 easily in HPC"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = ["click>=8.1.8", "numpy>=2.2.5", "pyfastx>=2.2.0", "rich>=14.0.0", "safetensors>=0.5.3", "torch>=2.7.0", "typer>=0.15.2"]
 
 [project.urls]
@@ -127,6 +127,4 @@ filterwarnings = [
 xfail_strict = true
 
 [dependency-groups]
-dev = [
-    "pytest>=8.3.5",
-]
+dev = ["pytest>=8.3.5"]

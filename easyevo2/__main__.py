@@ -49,12 +49,6 @@ def embed(
             help="Device to run the model on (e.g., 'cuda:0' or 'cpu').",
         ),
     ] = "cuda:0",
-    max_length: Annotated[
-        int,
-        typer.Option(
-            help="Maximum sequence length to process.",
-        ),
-    ] = 1024,
     output: Annotated[
         Path | None,
         typer.Option(
@@ -108,7 +102,6 @@ def embed(
             "model_type": str(model_type),
             "layer_name": layer,
             "batch_size": str(batch_size),
-            "max_length": str(max_length),
             "output": str(output),
         }
 
