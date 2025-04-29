@@ -3,7 +3,7 @@ from pathlib import Path
 import torch
 
 from easyevo2.dataloader import get_seq_from_fx
-from easyevo2.io import save_embeddings
+from easyevo2.io import load_tensor, save_embeddings
 
 
 class TopyTokenizer:
@@ -54,10 +54,12 @@ def test_model_embed():
     output = "tests/data/test_embeddings"
     test_file = "tests/data/test.fa"
     sequences = get_seq_from_fx(test_file)
+    seq_count = 0
     embeddings_with_name = {}
 
     # Process sequences in batches
     for name, seq in sequences:
+        seq_count += 1
         # Tokenize and process the sequence
         input_ids = torch.tensor(
             model.tokenizer.tokenize(seq),
@@ -72,6 +74,8 @@ def test_model_embed():
 
             # Store the embeddings
             embeddings_with_name[name] = embeddings
+
+    layer_outputs = []
 
     # Save the embeddings to the output file
     for layer in layer_name:
@@ -89,6 +93,8 @@ def test_model_embed():
                 f".{model_type}.{layer}.safetensors"
             )
 
+        layer_outputs.append(layer_output)
+
         layer_embeddings = {
             name: embeddings[layer].cpu()
             for name, embeddings in embeddings_with_name.items()
@@ -99,3 +105,18 @@ def test_model_embed():
             layer_output,
             metadata=metadata,
         )
+
+    # Check if the output files are created
+    for layer_output in layer_outputs:
+        assert layer_output.exists()
+        assert layer_output.stat().st_size > 0
+
+        layer_embeddings = load_tensor(layer_output)
+        assert isinstance(layer_embeddings, dict)
+        assert all(
+            isinstance(embedding, torch.Tensor)
+            for embedding in layer_embeddings.values()
+        )
+        assert len(layer_embeddings) == seq_count
+
+        Path(layer_output).unlink()

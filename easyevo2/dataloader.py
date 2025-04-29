@@ -117,7 +117,7 @@ class FxDataset(Dataset):
             for i, (_, seq, _) in enumerate(pyfastx.Fastx(self.fx_file)):
                 if i == self.indices[idx]:
                     break
-s
+
             # Truncate sequence if necessary
             if self.max_length and len(seq) > self.max_length:
                 seq = seq[: self.max_length]
