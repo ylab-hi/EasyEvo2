@@ -2,8 +2,19 @@ from pathlib import Path
 
 import torch
 
-from easyevo2.dataloader import get_seq_from_fx, get_seq_from_fx_to_dict
+from easyevo2.dataloader import get_seq_from_fx
 from easyevo2.io import save_embeddings
+
+
+class TopyTokenizer:
+    """A toy tokenizer that generates random token IDs for testing purposes."""
+
+    def __init__(self):
+        self.vocab_size = 10000
+
+    def tokenize(self, sequence) -> list[int]:
+        """Tokenize a sequence into random token IDs."""
+        return [ord(seq) for seq in sequence]
 
 
 class ToyModel:
@@ -11,13 +22,15 @@ class ToyModel:
 
     def __init__(self, embedding_dim):
         self.embedding_dim = embedding_dim
+        self.tokenizer = TopyTokenizer()
 
     def generate_embedding(self):
         """Generate a random embedding."""
         return torch.randn(self.embedding_dim)
 
-    def __call__(self, layer_names, *args, **kwds):
+    def __call__(self, *args, **kwds):
         embeddings = {}
+        layer_names = kwds.get("layer_names", [])
         for layer_name in layer_names:
             embeddings[layer_name] = self.generate_embedding()
 
@@ -37,14 +50,14 @@ def test_model_embed():
     # Create a toy model
     model = ToyModel(embedding_dim=128)
     model_type = "toy_model"
-    layer_name = ["blocks.28.mlp.l3"]
+    layer_name = ["blocks.28.mlp.l3", "blocks.28.mlp.l4"]
     output = "tests/data/test_embeddings"
     test_file = "tests/data/test.fa"
     sequences = get_seq_from_fx(test_file)
     embeddings_with_name = {}
 
     # Process sequences in batches
-    for name, seq in sequences.items():
+    for name, seq in sequences:
         # Tokenize and process the sequence
         input_ids = torch.tensor(
             model.tokenizer.tokenize(seq),
@@ -64,12 +77,17 @@ def test_model_embed():
     for layer in layer_name:
         metadata = {
             "output": str(output),
+            "layer": layer,
         }
 
         if output is None:
-            output = Path(test_file).with_suffix(f".{model_type}.{layer}.safetensors")
+            layer_output = Path(test_file).with_suffix(
+                f".{model_type}.{layer}.safetensors"
+            )
         else:
-            output = Path(output).with_suffix(f".{model_type}.{layer}.safetensors")
+            layer_output = Path(output).with_suffix(
+                f".{model_type}.{layer}.safetensors"
+            )
 
         layer_embeddings = {
             name: embeddings[layer].cpu()
@@ -78,6 +96,6 @@ def test_model_embed():
 
         save_embeddings(
             layer_embeddings,
-            output,
+            layer_output,
             metadata=metadata,
         )

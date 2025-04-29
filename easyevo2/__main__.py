@@ -113,9 +113,13 @@ def embed(
         }
 
         if output is None:
-            output = Path(filename).with_suffix(f".{model_type}.{layer}.safetensors")
+            layer_output = Path(filename).with_suffix(
+                f".{model_type}.{layer}.safetensors"
+            )
         else:
-            output = Path(output).with_suffix(f".{model_type}.{layer}.safetensors")
+            layer_output = Path(output).with_suffix(
+                f".{model_type}.{layer}.safetensors"
+            )
 
         layer_embeddings = {
             name: embeddings[layer].cpu()
@@ -124,7 +128,7 @@ def embed(
 
         save_embeddings(
             layer_embeddings,
-            output,
+            layer_output,
             metadata=metadata,
         )
 

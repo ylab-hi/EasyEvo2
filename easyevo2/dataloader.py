@@ -114,7 +114,7 @@ class FxDataset(Dataset):
         else:
             # Get the actual sequence using pyfastx
             # Use more optimized approach by accessing Fastx with index
-            for i, (_, seq, _) in enumerate(pyfastx.Fastx(self.fx_file)):
+            for i, (_, _seq, _) in enumerate(pyfastx.Fastx(self.fx_file)):
                 if i == self.indices[idx]:
                     break
 
