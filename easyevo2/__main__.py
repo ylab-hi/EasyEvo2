@@ -93,8 +93,13 @@ def embed(
                 input_ids, return_embeddings=True, layer_names=layer_name
             )
 
+            # Move embeddings to CPU to free GPU memory
+            cpu_embeddings = {
+                layer: tensor.detach().cpu() for layer, tensor in embeddings.items()
+            }
+
             # Store the embeddings
-            embeddings_with_name[name] = embeddings
+            embeddings_with_name[name] = cpu_embeddings
 
     # Save the embeddings to the output file
     for layer in layer_name:
@@ -115,8 +120,7 @@ def embed(
             )
 
         layer_embeddings = {
-            name: embeddings[layer].cpu()
-            for name, embeddings in embeddings_with_name.items()
+            name: embeddings[layer] for name, embeddings in embeddings_with_name.items()
         }
 
         save_embeddings(

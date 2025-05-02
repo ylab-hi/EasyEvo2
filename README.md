@@ -45,7 +45,7 @@ The output will be a safetensor file containing the embeddings for each sequence
 We can load the embeddings using the `load_tensor` function:
 
 ```python
-from easyevo2 import load_tensor
+from easyevo2.io import load_tensor
 
 embeddings = load_tensor("my_embeddings.mode.layer.safetensors")
 print(embeddings)
