@@ -55,6 +55,22 @@ print(embeddings)
 # }
 ```
 
+### Evo2 Memory Estimates
+
+| Model         | GPU Memory Usage | Embedding Dimension | Batch Size |
+| ------------- | ---------------- | ------------------- | ---------- |
+| Evo2 1B Base  | 1.5 GB           | 2048                | 1          |
+| Evo2 7B       | 15 GB            | 4096                | 1          |
+| Evo2 40B Base | >80 GB\*         | --                  | 1          |
+| Evo2 40B      | >80 GB\*         | --                  | 1          |
+
+\* Estimated based on scaling from other models
+
+**Notes:**
+
+- Longer sequences require proportionally more memory
+- H100 GPUs (80GB) can accommodate the 40B model with batch size 1 but may struggle with the 40B model
+
 ## Development
 
 This project uses a Makefile to automate common development tasks:
