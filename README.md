@@ -69,7 +69,7 @@ print(embeddings)
 **Notes:**
 
 - Longer sequences require proportionally more memory
-- H100 GPUs (80GB) can accommodate the 40B model with batch size 1 but may struggle with the 40B model
+- H100 GPUs (80GB) can accommodate the 7B model with batch size 1 but may struggle with the 40B model
 
 ## Development
 
