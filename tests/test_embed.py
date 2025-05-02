@@ -73,7 +73,13 @@ def test_model_embed():
             )
 
             # Store the embeddings
-            embeddings_with_name[name] = embeddings
+            # Move embeddings to CPU to free GPU memory
+            cpu_embeddings = {
+                layer: tensor.detach().cpu() for layer, tensor in embeddings.items()
+            }
+
+            # Store the embeddings
+            embeddings_with_name[name] = cpu_embeddings
 
     layer_outputs = []
 
