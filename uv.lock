@@ -55,8 +55,12 @@ dependencies = [
     { name = "pyfastx" },
     { name = "rich" },
     { name = "safetensors" },
-    { name = "torch" },
     { name = "typer" },
+]
+
+[package.optional-dependencies]
+torch = [
+    { name = "torch" },
 ]
 
 [package.dev-dependencies]
@@ -72,9 +76,10 @@ requires-dist = [
     { name = "pyfastx", specifier = ">=2.2.0" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "safetensors", specifier = ">=0.5.3" },
-    { name = "torch", specifier = "==2.5.1" },
+    { name = "torch", marker = "extra == 'torch'", specifier = "==2.5.1" },
     { name = "typer", specifier = ">=0.15.2" },
 ]
+provides-extras = ["torch"]
 
 [package.metadata.requires-dev]
 dev = [
