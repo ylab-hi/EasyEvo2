@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "easyevo2"
-version = "0.1.2"
+version = "0.1.3"
 description = "To use Evo2 easily in HPC"
 readme = "README.md"
 license = { file = "LICENSE" }
