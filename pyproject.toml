@@ -9,7 +9,15 @@ description = "To use Evo2 easily in HPC"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
-dependencies = ["click>=8.1.8", "numpy>=2.2.5", "pyfastx>=2.2.0", "rich>=14.0.0", "safetensors>=0.5.3", "typer>=0.15.2"]
+dependencies = [
+	"click>=8.1.8",
+	"numpy>=2.2.5",
+	"pyfastx>=2.2.0",
+	"rich>=14.0.0",
+	"safetensors>=0.5.3",
+	"typer>=0.15.2",
+	"pandas>=2.2.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/ylab-hi/EasyEvo2"
@@ -111,7 +119,14 @@ addopts = [
 	# Default to running fast tests only. To run ALL tests, run: pytest -m ""
 	"-m not slow and not write_disk and not release and not docs and not hypothesis and not benchmark and not ci_only",
 ]
-markers = ["ci_only: Tests that should only run on CI by default.", "debug: Tests that should be run on a Polars debug build.", "docs: Documentation code snippets", "release: Tests that should be run on a Polars release build.", "slow: Tests with a longer than average runtime.", "write_disk: Tests that write to disk"]
+markers = [
+	"ci_only: Tests that should only run on CI by default.",
+	"debug: Tests that should be run on a Polars debug build.",
+	"docs: Documentation code snippets",
+	"release: Tests that should be run on a Polars release build.",
+	"slow: Tests with a longer than average runtime.",
+	"write_disk: Tests that write to disk",
+]
 filterwarnings = [
 	# Fail on warnings
 	"error",

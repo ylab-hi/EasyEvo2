@@ -3,10 +3,13 @@ from typing import Annotated
 
 import torch
 import typer
+import pandas as pd
+import json
 
 from easyevo2.dataloader import get_seq_from_fx
 from easyevo2.io import save_embeddings
 from easyevo2.model import ModelType, load_model
+from easyevo2.utils import check_cuda, sliding_window
 
 # define a command-line interface (CLI) using Typer
 # the cli include subcommands
@@ -61,12 +64,7 @@ def embed(
     if layer_name is None:
         layer_name = ["blocks.28.mlp.l3"]
 
-    if device.startswith("cuda") and torch.cuda.is_available():
-        # Check if the specified GPU is available
-        gpu_index = int(device.split(":")[1])
-        if gpu_index >= torch.cuda.device_count():
-            msg = f"GPU index {gpu_index} is out of range. Available GPUs: {torch.cuda.device_count()}"
-            raise ValueError(msg)
+    check_cuda(device)
 
     model = load_model(model_type)
     sequences = get_seq_from_fx(
@@ -136,6 +134,95 @@ def list_models():
     models = ModelType.list_models()
     for model in models:
         print(model)
+
+
+@app.command()
+def calculate_probs(
+    filename: Annotated[
+        Path,
+        typer.Argument(
+            ...,
+            help="Path to the FASTA or FASTQ file.",
+        ),
+    ],
+    model_type: Annotated[
+        ModelType,
+        typer.Option(
+            help="Model type to use for embedding.",
+        ),
+    ],
+    window_size: Annotated[
+        int,
+        typer.Option(
+            help="Window size for calculating probabilities.",
+        ),
+    ],
+    step_size: Annotated[
+        int,
+        typer.Option(
+            help="Step size for calculating probabilities.",
+        ),
+    ],
+    device: Annotated[
+        str,
+        typer.Option(
+            help="Device to run the model on (e.g., 'cuda:0' or 'cpu').",
+        ),
+    ] = "cuda:0",
+    output: Annotated[
+        Path | None,
+        typer.Option(
+            help="Output file path for probabilities. If not specified, will use input filename with .probs.csv suffix.",
+        ),
+    ] = None,
+):
+    """Calculate probabilities for a FASTA or FASTQ file."""
+    try:
+        check_cuda(device)
+
+        # Load model and sequences
+        model = load_model(model_type)
+        sequences = get_seq_from_fx(filename)
+
+        # Process sequences in sliding windows
+        sliding_window_sequences = sliding_window(sequences, window_size, step_size)
+
+        # Create DataFrame for efficient processing
+        df = pd.DataFrame(
+            sliding_window_sequences, columns=["sequence_name", "sequence"]
+        )
+
+        # Calculate probabilities in batches
+        probs = model.score_sequences(df["sequence"].tolist())
+        df["probability"] = probs
+
+        # Prepare output path
+        if output is None:
+            output = Path(filename).with_suffix(".probs.csv")
+
+        # Save results with metadata
+        metadata = {
+            "model_type": model_type.value,
+            "window_size": window_size,
+            "step_size": step_size,
+            "device": device,
+            "timestamp": pd.Timestamp.now().isoformat(),
+        }
+
+        # Save to CSV with metadata
+        df.to_csv(output, index=False)
+
+        # Save metadata to a separate JSON file
+        metadata_path = output.with_suffix(".metadata.json")
+        with Path(metadata_path).open("w") as f:
+            json.dump(metadata, f, indent=2)
+
+        print(f"Results saved to {output}")
+        print(f"Metadata saved to {metadata_path}")
+
+    except Exception as e:
+        print(f"Error processing file: {e}")
+        raise typer.Exit(1) from e
 
 
 if __name__ == "__main__":
