@@ -1,10 +1,10 @@
+import json
 from pathlib import Path
 from typing import Annotated
 
+import pandas as pd
 import torch
 import typer
-import pandas as pd
-import json
 
 from easyevo2.dataloader import get_seq_from_fx
 from easyevo2.io import save_embeddings
