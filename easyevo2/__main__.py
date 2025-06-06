@@ -137,7 +137,7 @@ def list_models():
 
 
 @app.command()
-def calculate_probs(
+def score(
     filename: Annotated[
         Path,
         typer.Argument(
@@ -194,6 +194,7 @@ def calculate_probs(
 
         # Calculate probabilities in batches
         probs = model.score_sequences(df["sequence"].tolist())
+
         df["probability"] = probs
 
         # Prepare output path
