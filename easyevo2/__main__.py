@@ -169,6 +169,12 @@ def score(
             help="Device to run the model on (e.g., 'cuda:0' or 'cpu').",
         ),
     ] = "cuda:0",
+    sequence: Annotated[
+        bool,
+        typer.Option(
+            help="Whether to store single sequence.",
+        ),
+    ] = False,
     output: Annotated[
         Path | None,
         typer.Option(
@@ -196,6 +202,9 @@ def score(
         probs = model.score_sequences(df["sequence"].tolist())
 
         df["probability"] = probs
+
+        if not sequence:
+            df = df.drop(columns=["sequence"])
 
         # Prepare output path
         if output is None:
