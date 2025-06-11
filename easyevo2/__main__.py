@@ -228,7 +228,9 @@ def score(
 
         # Prepare output path
         if output is None:
-            output = Path(filename).with_suffix(f".probs_{window_size}_{step_size}.csv")
+            output = Path(filename).with_suffix(
+                f".probs_{model_type}_{window_size}_{step_size}.csv"
+            )
 
         # Save results with metadata
         metadata = {
