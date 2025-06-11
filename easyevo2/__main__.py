@@ -228,7 +228,7 @@ def score(
 
         # Prepare output path
         if output is None:
-            output = Path(filename).with_suffix(".probs.csv")
+            output = Path(filename).with_suffix(f".probs_{window_size}_{step_size}.csv")
 
         # Save results with metadata
         metadata = {
@@ -237,6 +237,7 @@ def score(
             "step_size": step_size,
             "device": device,
             "timestamp": pd.Timestamp.now().isoformat(),
+            "output": str(output),
         }
 
         # Save to CSV with metadata
