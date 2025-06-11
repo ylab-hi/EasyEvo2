@@ -193,7 +193,7 @@ def score(
         check_cuda(device)
 
         # Load model and sequences
-        # model = load_model(model_type)
+        model = load_model(model_type)
         sequences = get_seq_from_fx(filename)
 
         # Process sequences in sliding windows
@@ -219,8 +219,7 @@ def score(
                     f.write(f">{sequence_name}\n{sequence}\n")
 
         # Calculate probabilities in batches
-        # probs = model.score_sequences(df["sequence"].tolist())
-        probs = [0.5] * len(df)
+        probs = model.score_sequences(df["sequence"].tolist())
 
         df["probability"] = probs
 
