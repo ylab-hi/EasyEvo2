@@ -175,6 +175,12 @@ def score(
             help="Whether to store single sequence.",
         ),
     ] = False,
+    save_windows: Annotated[
+        bool,
+        typer.Option(
+            help="Whether to save the windows sequences as a separate file.",
+        ),
+    ] = False,
     output: Annotated[
         Path | None,
         typer.Option(
@@ -187,19 +193,34 @@ def score(
         check_cuda(device)
 
         # Load model and sequences
-        model = load_model(model_type)
+        # model = load_model(model_type)
         sequences = get_seq_from_fx(filename)
 
         # Process sequences in sliding windows
-        sliding_window_sequences = sliding_window(sequences, window_size, step_size)
+        sliding_window_sequences = list(
+            sliding_window(sequences, window_size, step_size)
+        )
 
         # Create DataFrame for efficient processing
         df = pd.DataFrame(
             sliding_window_sequences, columns=["sequence_name", "sequence"]
         )
 
+        if save_windows:
+            output_filename = Path(filename).with_suffix(
+                f".windows_{window_size}_{step_size}.fa"
+            )
+            print(
+                f"Saving {len(sliding_window_sequences)} windows to {output_filename}"
+            )
+            # save the windows sequences to a fasta file
+            with output_filename.open("w") as f:
+                for sequence_name, sequence in sliding_window_sequences:
+                    f.write(f">{sequence_name}\n{sequence}\n")
+
         # Calculate probabilities in batches
-        probs = model.score_sequences(df["sequence"].tolist())
+        # probs = model.score_sequences(df["sequence"].tolist())
+        probs = [0.5] * len(df)
 
         df["probability"] = probs
 
