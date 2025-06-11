@@ -169,16 +169,16 @@ def score(
             help="Device to run the model on (e.g., 'cuda:0' or 'cpu').",
         ),
     ] = "cuda:0",
-    sequence: Annotated[
-        bool,
-        typer.Option(
-            help="Whether to store single sequence.",
-        ),
-    ] = False,
-    save_windows: Annotated[
+    save_sequence: Annotated[
         bool,
         typer.Option(
             help="Whether to save the windows sequences as a separate file.",
+        ),
+    ] = False,
+    sequence_without_windows: Annotated[
+        bool,
+        typer.Option(
+            help="Whether to use sequence without windows as windows sequence for scoring.",
         ),
     ] = False,
     output: Annotated[
@@ -198,7 +198,12 @@ def score(
 
         # Process sequences in sliding windows
         sliding_window_sequences = list(
-            sliding_window(sequences, window_size, step_size)
+            sliding_window(
+                sequences,
+                window_size,
+                step_size,
+                use_sequence_without_windows=sequence_without_windows,
+            )
         )
 
         # Create DataFrame for efficient processing
@@ -206,7 +211,7 @@ def score(
             sliding_window_sequences, columns=["sequence_name", "sequence"]
         )
 
-        if save_windows:
+        if save_sequence:
             output_filename = Path(filename).with_suffix(
                 f".windows_{window_size}_{step_size}.fa"
             )
@@ -222,9 +227,7 @@ def score(
         probs = model.score_sequences(df["sequence"].tolist())
 
         df["probability"] = probs
-
-        if not sequence:
-            df = df.drop(columns=["sequence"])
+        df = df.drop(columns=["sequence"])
 
         # Prepare output path
         if output is None:
@@ -235,6 +238,7 @@ def score(
         # Save results with metadata
         metadata = {
             "model_type": model_type.value,
+            "sequence_without_windows": sequence_without_windows,
             "window_size": window_size,
             "step_size": step_size,
             "device": device,

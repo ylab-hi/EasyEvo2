@@ -59,3 +59,22 @@ def test_probs():
     # remove the output and metadata
     output.unlink()
     metadata_path.unlink()
+
+
+def test_windows_without_windows():
+    filename = "tests/data/test.fa"
+    sliding_window_size = 100
+    step_size = 10
+    use_sequence_without_windows = True
+
+    sequences = get_seq_from_fx(filename)
+
+    sliding_window_sequences = sliding_window(
+        sequences,
+        sliding_window_size,
+        step_size,
+        use_sequence_without_windows=use_sequence_without_windows,
+    )
+
+    for seq in sliding_window_sequences:
+        print(seq)
