@@ -17,6 +17,7 @@ dependencies = [
 	"safetensors>=0.5.3",
 	"typer>=0.15.2",
 	"pandas>=2.2.0",
+	"pandas-stubs>=2.2.3.250527",
 ]
 
 [project.urls]

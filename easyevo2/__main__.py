@@ -215,8 +215,8 @@ def score(
             )
             # save the windows sequences to a fasta file
             with output_filename.open("w") as f:
-                for sequence_name, sequence in sliding_window_sequences:
-                    f.write(f">{sequence_name}\n{sequence}\n")
+                for seq in sliding_window_sequences:
+                    f.write(f">{seq[0]}\n{seq[1]}\n")
 
         # Calculate probabilities in batches
         probs = model.score_sequences(df["sequence"].tolist())
