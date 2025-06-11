@@ -45,6 +45,9 @@ def sliding_window(
         raise ValueError(msg)
 
     for name, seq in sequences:
+        # return sequence itself first
+        yield (name, seq)
+
         if len(seq) < window_size:
             continue  # Skip sequences shorter than window_size
 
