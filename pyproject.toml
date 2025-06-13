@@ -13,7 +13,7 @@ dependencies = [
 	"click>=8.1.8",
 	"numpy>=2.2.5",
 	"pyfastx>=2.2.0",
-	"rich>=14.0.0",
+	"rich==13.9.2",
 	"safetensors>=0.5.3",
 	"typer>=0.15.2",
 	"pandas>=2.2.0",
