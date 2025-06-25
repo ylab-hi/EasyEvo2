@@ -5,6 +5,7 @@ from typing import Annotated
 import pandas as pd
 import torch
 import typer
+from rich.progress import track
 
 from easyevo2.dataloader import get_seq_from_fx
 from easyevo2.io import save_embeddings
@@ -52,6 +53,12 @@ def embed(
             help="Device to run the model on (e.g., 'cuda:0' or 'cpu').",
         ),
     ] = "cuda:0",
+    progress: Annotated[
+        bool,
+        typer.Option(
+            help="Whether to show a progress bar.",
+        ),
+    ] = False,
     output: Annotated[
         Path | None,
         typer.Option(
@@ -74,7 +81,9 @@ def embed(
     embeddings_with_name = {}
 
     # Process sequences in batches
-    for seq_data in sequences:
+    for seq_data in track(
+        sequences, description="Embedding sequences", disable=not progress
+    ):
         name = seq_data[0]
         seq = seq_data[1]
         # Tokenize and process the sequence
