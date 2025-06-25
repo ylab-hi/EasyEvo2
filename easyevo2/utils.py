@@ -5,12 +5,26 @@ import torch
 
 def check_cuda(device: str) -> None:
     """Check if the specified GPU is available."""
-    if device.startswith("cuda") and torch.cuda.is_available():
-        # Check if the specified GPU is available
-        gpu_index = int(device.split(":")[1])
-        if gpu_index >= torch.cuda.device_count():
-            msg = f"GPU index {gpu_index} is out of range. Available GPUs: {torch.cuda.device_count()}"
+    if device.startswith("cuda"):
+        if not torch.cuda.is_available():
+            msg = "CUDA is not available on this system"
             raise ValueError(msg)
+
+        # Handle both "cuda" and "cuda:X" formats
+        if ":" in device:
+            try:
+                gpu_index = int(device.split(":")[1])
+                if gpu_index >= torch.cuda.device_count():
+                    msg = f"GPU index {gpu_index} is out of range. Available GPUs: {torch.cuda.device_count()}"
+                    raise ValueError(msg)
+            except (ValueError, IndexError):
+                msg = f"Invalid CUDA device format: {device}. Expected format: 'cuda' or 'cuda:X'"
+                raise ValueError(msg)
+        else:
+            # Just "cuda" - check if any GPU is available
+            if torch.cuda.device_count() == 0:
+                msg = "No CUDA devices available"
+                raise ValueError(msg)
 
 
 def sliding_window(
@@ -47,6 +61,11 @@ def sliding_window(
     for seq_data in sequences:
         name = seq_data[0]
         seq = seq_data[1]
+
+        # Validate sequence
+        if not seq:
+            continue
+
         # return sequence itself first
         yield (name, seq)
 
@@ -57,9 +76,12 @@ def sliding_window(
             if use_sequence_without_windows:
                 # Only yield if the resulting sequence would be non-empty
                 if i > 0 or i + window_size < len(seq):
-                    yield (
-                        f"{name}_without_{i}_{i + window_size}",
-                        seq[:i] + seq[i + window_size :],
-                    )
+                    # Use string slicing instead of concatenation for better performance
+                    result_seq = seq[:i] + seq[i + window_size :]
+                    if result_seq:  # Only yield non-empty sequences
+                        yield (
+                            f"{name}_without_{i}_{i + window_size}",
+                            result_seq,
+                        )
             else:
                 yield f"{name}_{i}_{i + window_size}", seq[i : i + window_size]
