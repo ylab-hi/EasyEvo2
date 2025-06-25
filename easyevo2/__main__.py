@@ -74,8 +74,10 @@ def embed(
     check_cuda(device)
 
     model = load_model(model_type)
-    sequences = get_seq_from_fx(
-        filename,
+    sequences = list(
+        get_seq_from_fx(
+            filename,
+        )
     )
 
     embeddings_with_name = {}
