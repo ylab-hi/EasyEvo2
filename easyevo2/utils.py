@@ -44,7 +44,9 @@ def sliding_window(
         msg = "step_size must be at least 1"
         raise ValueError(msg)
 
-    for name, seq in sequences:
+    for seq_data in sequences:
+        name = seq_data[0]
+        seq = seq_data[1]
         # return sequence itself first
         yield (name, seq)
 

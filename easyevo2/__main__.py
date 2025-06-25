@@ -74,7 +74,9 @@ def embed(
     embeddings_with_name = {}
 
     # Process sequences in batches
-    for name, seq in sequences:
+    for seq_data in sequences:
+        name = seq_data[0]
+        seq = seq_data[1]
         # Tokenize and process the sequence
         input_ids = (
             torch.tensor(
