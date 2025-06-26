@@ -1,16 +1,27 @@
 import json
+import logging
 from pathlib import Path
 from typing import Annotated
 
 import pandas as pd
 import torch
 import typer
+from rich.logging import RichHandler
 from rich.progress import track
 
 from easyevo2.dataloader import get_seq_from_fx
 from easyevo2.io import save_embeddings
 from easyevo2.model import ModelType, load_model
 from easyevo2.utils import check_cuda, sliding_window
+
+logging.basicConfig(
+    level="INFO",
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True)],
+)
+
+log = logging.getLogger("rich")
 
 # define a command-line interface (CLI) using Typer
 # the cli include subcommands
@@ -65,8 +76,20 @@ def embed(
             help="Output file to save the embeddings.",
         ),
     ] = None,
+    save_interval: Annotated[
+        int,
+        typer.Option(
+            help="Save embeddings every N sequences processed.",
+        ),
+    ] = 10,
+    max_retries: Annotated[
+        int,
+        typer.Option(
+            help="Maximum number of retries for failed sequences.",
+        ),
+    ] = 3,
 ):
-    """Embed a FASTA or FASTQ file."""
+    """Embed a FASTA or FASTQ file with improved error handling and early saving."""
     # Load the model
     if layer_name is None:
         layer_name = ["blocks.28.mlp.l3"]
@@ -74,53 +97,17 @@ def embed(
     check_cuda(device)
 
     model = load_model(model_type)
-    sequences = list(
-        get_seq_from_fx(
-            filename,
-        )
-    )
+    sequences = list(get_seq_from_fx(filename))
 
+    # Initialize tracking variables
     embeddings_with_name = {}
+    failed_sequences = []
+    successful_count = 0
+    failed_count = 0
 
-    # Process sequences in batches
-    for seq_data in track(
-        sequences, description="Embedding sequences", disable=not progress
-    ):
-        name = seq_data[0]
-        seq = seq_data[1]
-        # Tokenize and process the sequence
-        input_ids = (
-            torch.tensor(
-                model.tokenizer.tokenize(seq),
-                dtype=torch.int,
-            )
-            .unsqueeze(0)
-            .to(device)
-        )
-
-        with torch.inference_mode():
-            # Get embeddings
-            outputs, embeddings = model(
-                input_ids, return_embeddings=True, layer_names=layer_name
-            )
-
-            # Move embeddings to CPU to free GPU memory
-            cpu_embeddings = {
-                layer: tensor.detach().cpu() for layer, tensor in embeddings.items()
-            }
-
-            # Store the embeddings
-            embeddings_with_name[name] = cpu_embeddings
-
-    # Save the embeddings to the output file
+    # Create output paths for each layer
+    layer_outputs = {}
     for layer in layer_name:
-        metadata = {
-            "model_type": model_type.value,
-            "layer_name": layer,
-            "batch_size": str(batch_size),
-            "output": str(output),
-        }
-
         if output is None:
             layer_output = Path(filename).with_suffix(
                 f".{model_type}.{layer}.safetensors"
@@ -129,16 +116,143 @@ def embed(
             layer_output = Path(output).with_suffix(
                 f".{model_type}.{layer}.safetensors"
             )
+        layer_outputs[layer] = layer_output
 
-        layer_embeddings = {
-            name: embeddings[layer] for name, embeddings in embeddings_with_name.items()
-        }
+    def save_current_embeddings():
+        """Save current embeddings to files."""
+        for layer in layer_name:
+            if not embeddings_with_name:  # Skip if no embeddings
+                continue
 
-        save_embeddings(
-            layer_embeddings,
-            layer_output,
-            metadata=metadata,
-        )
+            metadata = {
+                "model_type": model_type.value,
+                "layer_name": layer,
+                "batch_size": str(batch_size),
+                "output": str(layer_outputs[layer]),
+                "successful_count": str(successful_count),
+                "failed_count": str(failed_count),
+                "total_processed": str(successful_count + failed_count),
+            }
+
+            layer_embeddings = {
+                name: embeddings[layer]
+                for name, embeddings in embeddings_with_name.items()
+                if layer in embeddings
+            }
+
+            if layer_embeddings:  # Only save if we have embeddings for this layer
+                save_embeddings(
+                    layer_embeddings,
+                    layer_outputs[layer],
+                    metadata=metadata,
+                )
+
+    # Process sequences one by one (since Evo2 can only handle single sequences)
+    for i, seq_data in enumerate(
+        track(sequences, description="Embedding sequences", disable=not progress)
+    ):
+        name = seq_data[0]
+        seq = seq_data[1]
+
+        # Skip if sequence is empty
+        if not seq or len(seq.strip()) == 0:
+            failed_sequences.append((name, "Empty sequence"))
+            failed_count += 1
+            continue
+
+        success = False
+        retry_count = 0
+
+        while not success and retry_count < max_retries:
+            try:
+                # Tokenize and process the sequence
+                input_ids = (
+                    torch.tensor(
+                        model.tokenizer.tokenize(seq),
+                        dtype=torch.int,
+                    )
+                    .unsqueeze(0)
+                    .to(device)
+                )
+
+                with torch.inference_mode():
+                    # Get embeddings
+                    outputs, embeddings = model(
+                        input_ids, return_embeddings=True, layer_names=layer_name
+                    )
+
+                    # Move embeddings to CPU to free GPU memory
+                    cpu_embeddings = {
+                        layer: tensor.detach().cpu()
+                        for layer, tensor in embeddings.items()
+                    }
+
+                    # Store the embeddings
+                    embeddings_with_name[name] = cpu_embeddings
+
+                    success = True
+                    successful_count += 1
+
+                # Clear GPU memory
+                del input_ids, outputs, embeddings
+                if device.startswith("cuda"):
+                    torch.cuda.empty_cache()
+
+            except Exception as e:
+                retry_count += 1
+                error_msg = f"Attempt {retry_count}: {e}"
+
+                if retry_count >= max_retries:
+                    failed_sequences.append((name, error_msg))
+                    failed_count += 1
+                    print(
+                        f"Failed to process sequence '{name}' after {max_retries} attempts: {e}"
+                    )
+                else:
+                    print(
+                        f"Retrying sequence '{name}' (attempt {retry_count + 1}/{max_retries}): {e}"
+                    )
+
+                # Clear any partial results
+                if name in embeddings_with_name:
+                    del embeddings_with_name[name]
+
+                # Clear GPU memory on error
+                if device.startswith("cuda"):
+                    torch.cuda.empty_cache()
+
+        # Save embeddings periodically
+        if (i + 1) % save_interval == 0:
+            save_current_embeddings()
+            if progress:
+                print(f"Saved {successful_count} embeddings, {failed_count} failed")
+
+    # Save final embeddings
+    save_current_embeddings()
+
+    # Print summary
+    log.info("\nProcessing complete!")
+    log.info(f"Successfully processed: {successful_count} sequences")
+    log.info(f"Failed: {failed_count} sequences")
+
+    if failed_sequences:
+        log.info("\nFailed sequences:")
+        for name, error in failed_sequences[:10]:  # Show first 10 failures
+            log.info(f"  {name}: {error}")
+        if len(failed_sequences) > 10:
+            log.info(f"  ... and {len(failed_sequences) - 10} more")
+
+        # Save failed sequences to a file for reference
+        failed_file = Path(filename).with_suffix(".failed_sequences.txt")
+        with failed_file.open("w") as f:
+            f.write("Failed sequences:\n")
+            for name, error in failed_sequences:
+                f.write(f"{name}\t{error}\n")
+        log.info(f"Failed sequences saved to: {failed_file}")
+
+    # Print output file locations
+    for layer in layer_name:
+        log.info(f"Layer '{layer}' embeddings saved to: {layer_outputs[layer]}")
 
 
 @app.command()
