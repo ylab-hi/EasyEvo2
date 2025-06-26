@@ -1,3 +1,4 @@
+import gc
 from collections.abc import Generator, Iterable
 
 import torch
@@ -25,6 +26,62 @@ def check_cuda(device: str) -> None:
             if torch.cuda.device_count() == 0:
                 msg = "No CUDA devices available"
                 raise ValueError(msg)
+
+
+def clear_gpu_memory(device: str) -> None:
+    """Clear GPU memory and run garbage collection."""
+    if device.startswith("cuda"):
+        torch.cuda.empty_cache()
+    gc.collect()
+
+
+def validate_sequence(
+    seq: str, min_length: int = 1, max_length: int | None = None
+) -> bool:
+    """
+    Validate a sequence for processing.
+
+    Args:
+        seq: The sequence to validate
+        min_length: Minimum allowed sequence length
+        max_length: Maximum allowed sequence length (None for no limit)
+
+    Returns
+    -------
+        True if sequence is valid, False otherwise
+    """
+    if not seq or len(seq) < min_length:
+        return False
+
+    if max_length and len(seq) > max_length:
+        return False
+
+    # Check for valid characters (basic DNA/RNA/protein characters)
+    valid_chars = set("ACGTUacgtuNnXx-")
+    return all(c in valid_chars for c in seq)
+
+
+def get_memory_usage(device: str) -> dict[str, float]:
+    """
+    Get current GPU memory usage for monitoring.
+
+    Args:
+        device: Device string ('cpu' or 'cuda:X')
+
+    Returns
+    -------
+        Dictionary with memory usage information
+    """
+    memory_info = {}
+
+    if device.startswith("cuda") and torch.cuda.is_available():
+        memory_info["gpu_allocated"] = torch.cuda.memory_allocated() / 1024**3  # GB
+        memory_info["gpu_reserved"] = torch.cuda.memory_reserved() / 1024**3  # GB
+        memory_info["gpu_total"] = (
+            torch.cuda.get_device_properties(0).total_memory / 1024**3
+        )  # GB
+
+    return memory_info
 
 
 def sliding_window(
