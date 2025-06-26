@@ -4,6 +4,8 @@ import torch
 from safetensors import safe_open
 from safetensors.torch import load_file, save_file
 
+from easyevo2.utils import log
+
 
 def save_tensor(
     tensor: torch.Tensor,
@@ -249,56 +251,108 @@ def get_optimal_device(
     return torch.device("cpu")
 
 
-def batch_process_tensors(
-    tensors: list[torch.Tensor],
-    batch_size: int,
-    process_fn,
-    device: torch.device | None = None,
-) -> list:
+def save_single_embedding(
+    name: str,
+    embedding: torch.Tensor,
+    filepath: str | Path,
+    metadata: dict[str, str] | None = None,
+) -> None:
     """
-    Process tensors in batches to avoid GPU memory issues.
+    Save a single embedding for a specific sequence.
 
     Parameters
     ----------
-    tensors : list of torch.Tensor
-        List of tensors to process.
-    batch_size : int
-        Number of tensors to process at once.
-    process_fn : callable
-        Function to apply to each batch of tensors.
-    device : torch.device, optional
-        Device to move tensors to for processing.
-
-    Returns
-    -------
-    list
-        List of processed results.
+    name : str
+        Name/identifier of the sequence.
+    embedding : torch.Tensor
+        The embedding tensor to save.
+    filepath : str or Path
+        Path where the embedding will be saved.
+    metadata : dict of str to str, optional
+        Metadata to associate with the embedding.
     """
-    results = []
+    # Convert filepath to Path object
+    filepath = Path(filepath)
 
-    # Use default device if none specified
-    if device is None:
-        device = get_optimal_device()
+    # Ensure the file has the correct extension
+    if filepath.suffix != ".safetensors":
+        filepath = filepath.with_suffix(".safetensors")
 
-    # Process in batches
-    for i in range(0, len(tensors), batch_size):
-        batch = tensors[i : i + batch_size]
+    # Ensure parent directory exists
+    filepath.parent.mkdir(parents=True, exist_ok=True)
 
-        # Move batch to target device
-        batch_on_device = [tensor.to(device) for tensor in batch]
+    # Move embedding to CPU before saving if it's on GPU
+    if embedding.is_cuda:
+        embedding = embedding.cpu()
 
-        # Process batch
-        with torch.no_grad():  # Use inference mode for efficiency
-            batch_results = process_fn(batch_on_device)
+    # Create a dict with the single embedding
+    embeddings_dict = {name: embedding}
 
-        # Store results
-        if isinstance(batch_results, list):
-            results.extend(batch_results)
-        else:
-            results.append(batch_results)
+    # Save the embedding
+    save_file(embeddings_dict, filepath, metadata)
 
-        # Clean up GPU memory if using CUDA
-        if device.type == "cuda":
-            torch.cuda.empty_cache()
 
-    return results
+def merge_embedding_files(
+    filepaths: list[str | Path],
+    output_filepath: str | Path,
+    metadata: dict[str, str] | None = None,
+) -> None:
+    """
+    Merge multiple embedding files into a single file.
+
+    Parameters
+    ----------
+    filepaths : list of str or Path
+        List of paths to embedding files to merge.
+    output_filepath : str or Path
+        Path where the merged embeddings will be saved.
+    metadata : dict of str to str, optional
+        Metadata to associate with the merged embeddings.
+    """
+    # Convert output_filepath to Path object
+    output_filepath = Path(output_filepath)
+
+    # Ensure the file has the correct extension
+    if output_filepath.suffix != ".safetensors":
+        output_filepath = output_filepath.with_suffix(".safetensors")
+
+    # Ensure parent directory exists
+    output_filepath.parent.mkdir(parents=True, exist_ok=True)
+
+    # Load and merge all embeddings
+    merged_embeddings = {}
+
+    for filepath in filepaths:
+        filepath = Path(filepath)
+        if filepath.exists():
+            try:
+                embeddings = load_file(filepath)
+                merged_embeddings.update(embeddings)
+            except Exception as e:
+                log.warning(f"Failed to load embeddings from {filepath}: {e}")
+                continue
+
+    # Save merged embeddings
+    if merged_embeddings:
+        save_file(merged_embeddings, output_filepath, metadata)
+        log.info(f"Merged embeddings saved to {output_filepath}")
+    else:
+        log.warning("No embeddings to merge")
+
+
+def cleanup_individual_files(filepaths: list[str | Path]) -> None:
+    """
+    Clean up individual embedding files after successful merge.
+
+    Parameters
+    ----------
+    filepaths : list of str or Path
+        List of paths to files to delete.
+    """
+    for filepath in filepaths:
+        filepath = Path(filepath)
+        if filepath.exists():
+            try:
+                filepath.unlink()
+            except Exception as e:
+                log.warning(f"Failed to delete {filepath}: {e}")

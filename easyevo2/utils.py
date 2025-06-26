@@ -1,7 +1,18 @@
 import gc
+import logging
 from collections.abc import Generator, Iterable
 
 import torch
+from rich.logging import RichHandler
+
+logging.basicConfig(
+    level="INFO",
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True)],
+)
+
+log = logging.getLogger("easyevo2")
 
 
 def check_cuda(device: str) -> None:
