@@ -1,7 +1,7 @@
 import typer
 
 from easyevo2.embed import embed
-from easyevo2.model import ModelType
+from easyevo2.list_models import list_models
 from easyevo2.score import score
 
 # define a command-line interface (CLI) using Typer
@@ -11,22 +11,13 @@ app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
 )
 
-app.command(
-    help="Embed sequences using a model.", epilog="EasyEvo2 make life easier for you."
-)(embed)
+app.command(help="Embed sequences using a model.")(embed)
 
 
-@app.command()
-def list_models():
-    """List all available model types."""
-    models = ModelType.list_models()
-    for model in models:
-        print(model)
+app.command(help="List all available models.")(list_models)
 
 
-app.command(
-    help="Score sequences using a model.", epilog="EasyEvo2 make life easier for you."
-)(score)
+app.command(help="Score sequences using a model.")(score)
 
 
 if __name__ == "__main__":
