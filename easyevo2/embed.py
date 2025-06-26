@@ -118,7 +118,7 @@ def embed(
                     "model_type": model_type.value,
                     "layer_name": layer,
                     "output": str(output),
-                    "sequence_processed": idx + 1,
+                    "sequence_processed": str(idx + 1),
                 }
 
                 if output is None:
@@ -162,7 +162,6 @@ def embed(
                 "model_type": model_type.value,
                 "layer_name": layer,
                 "output": str(output),
-                "final_batch": True,
             }
 
             if output is None:
