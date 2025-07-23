@@ -43,6 +43,12 @@ def embed(
             help="Save interval for the embeddings.",
         ),
     ] = 100,
+    max_seq_length: Annotated[
+        int | None,
+        typer.Option(
+            help="Maximum sequence length to process. If not provided, the model's max length will be used.",
+        ),
+    ] = None,
     output: Annotated[
         Path | None,
         typer.Option(
@@ -69,6 +75,13 @@ def embed(
     for idx, seq_data in enumerate(sequences):
         name = seq_data[0]
         seq = seq_data[1]
+
+        if max_seq_length is not None and len(seq) > max_seq_length:
+            log.warning(
+                f"Sequence {name} is longer than {max_seq_length} characters, truncating to {max_seq_length}"
+            )
+            seq = seq[:max_seq_length]
+
         try:
             # Tokenize and process the sequence
             input_ids = (
