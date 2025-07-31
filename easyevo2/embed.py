@@ -55,6 +55,12 @@ def embed(
             help="Output file to save the embeddings.",
         ),
     ] = None,
+    merge: Annotated[
+        bool,
+        typer.Option(
+            help="Merge the individual embeddings into a single file.",
+        ),
+    ] = False,
 ):
     """Embed a FASTA or FASTQ file."""
     # Load the model
@@ -198,29 +204,33 @@ def embed(
             )
             embedding_paths[layer].append(layer_output)
 
-    if embedding_paths:
-        for layer in layer_name:
-            layer_files = embedding_paths[layer]
-            merge_output = (
-                Path(filename).with_suffix(f".{model_type}.{layer}.safetensors")
-                if output is None
-                else Path(output).with_suffix(f".{model_type}.{layer}.safetensors")
-            )
-            metadata = {
-                "model_type": model_type.value,
-                "layer_name": layer,
-                "output": str(merge_output),
-            }
-            merge_embedding_files(layer_files, merge_output, metadata=metadata)
-            cleanup_individual_files(layer_files)
-
-    # Save the failing sequences to a file
-    if failing_sequences:
-        with Path(f"{filename.stem}.failing_sequences.txt").open("w") as f:
-            for seq in failing_sequences:
-                f.write(f"{seq}\n")
-
-        log.warning(f"Failed to process {len(failing_sequences)} sequences")
+    try:
+        if merge and embedding_paths:
+            for layer in layer_name:
+                layer_files = embedding_paths[layer]
+                merge_output = (
+                    Path(filename).with_suffix(f".{model_type}.{layer}.safetensors")
+                    if output is None
+                    else Path(output).with_suffix(f".{model_type}.{layer}.safetensors")
+                )
+                metadata = {
+                    "model_type": model_type.value,
+                    "layer_name": layer,
+                    "output": str(merge_output),
+                }
+                merge_embedding_files(layer_files, merge_output, metadata=metadata)
+                cleanup_individual_files(layer_files)
+    except Exception as e:
+        log.error(f"Error merging embeddings: {e}")
+    else:
+        log.info("Merged embeddings into a single file")
+    finally:
+        # Save the failing sequences to a file
+        if failing_sequences:
+            with Path(f"{filename.stem}.failing_sequences.txt").open("w") as f:
+                for seq in failing_sequences:
+                    f.write(f"{seq}\n")
+            log.warning(f"Failed to process {len(failing_sequences)} sequences")
 
     # Final cleanup
     del embeddings_with_name
