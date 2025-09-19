@@ -18,6 +18,8 @@ dependencies = [
 	"typer>=0.15.2",
 	"pandas>=2.2.0",
 	"pandas-stubs>=2.2.3.250527",
+	"torch>=2.5.1",
+	"transformers>=4.56.2",
 ]
 
 [project.urls]

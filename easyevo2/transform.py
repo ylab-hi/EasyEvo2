@@ -11,10 +11,6 @@ class ExonTransform:
     def __init__(self, gtf_file: str | Path, fasta_file: str | Path):
         self.gtf_file = Path(gtf_file)
         self.fasta_file = Path(fasta_file)
-        # Load the FASTA file using pyfastx
-        if pyfastx is None:
-            msg = "pyfastx is required but not installed. Please install it with: pip install pyfastx"
-            raise ImportError(msg)
         self.fasta = pyfastx.Fasta(str(self.fasta_file))
 
     def _parse_gtf_line(self, line: str) -> dict[str, Any]:
@@ -148,7 +144,6 @@ class ExonTransform:
                 chrom, start, end, strand, flanking_length
             )
             exon_sequences.append(sequence)
-
         return exon_sequences
 
     def transform_to_fasta(
@@ -164,4 +159,5 @@ class ExonTransform:
                 f.write(f"{sequence}\n")
 
     def __call__(self, gene_id: str, flanking_length: int = 100):
+        """Extract exon sequence of Gene from GTF file and save as FASTA file."""
         return self.transform(gene_id, flanking_length)

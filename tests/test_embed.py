@@ -68,7 +68,7 @@ def test_model_embed():
 
         with torch.inference_mode():
             # Get embeddings
-            outputs, embeddings = model(
+            _outputs, embeddings = model(
                 input_ids, return_embeddings=True, layer_names=layer_name
             )
 

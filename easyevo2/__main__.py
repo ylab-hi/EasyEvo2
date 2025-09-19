@@ -1,6 +1,7 @@
 import typer
 
 from easyevo2.embed import embed
+from easyevo2.exon_classifier import classify_exons
 from easyevo2.list_models import list_models
 from easyevo2.score import score
 
@@ -19,6 +20,7 @@ app.command(help="List all available models.")(list_models)
 
 app.command(help="Score sequences using a model.")(score)
 
+app.command(help="Classify exons using a model.")(classify_exons)
 
 if __name__ == "__main__":
     # run the CLI
