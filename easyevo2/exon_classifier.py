@@ -35,14 +35,16 @@ class FlankingSequences:
         """
         return self.fasta.flank(chrom, pos, pos, flanking_length)
 
+    def get_flanking_sequences_from_bed(self, bed_file: Path):
+        """
+        Get the flanking sequences from a BED file and a FASTA file.
 
-def get_flanking_sequences(bed_file: Path, fasta_file: Path):
-    """Get the flanking sequences from a BED file and a FASTA file."""
-    flanking_sequences = FlankingSequences(fasta_file)
-    with bed_file.open("r") as f:
-        for line in f:
-            name, chrom, start = line.strip().split("\t")
-            yield name, flanking_sequences.flank(chrom, int(start))
+        The Bed file include three columns: name, chrom, start.
+        """
+        with bed_file.open("r") as f:
+            for line in f:
+                name, chrom, start = line.strip().split("\t")
+                yield name, self.flank(chrom, int(start))
 
 
 def get_final_token_embedding(sequence, model, layer_name, device):
@@ -88,7 +90,8 @@ def classify_exons(
     """Classify exons using the specified model and layer."""
     check_cuda(device)
     model = load_model(model_type)
-    flanking_seqs = get_flanking_sequences(bed_file, fasta_file)
+    flanking_sequencer = FlankingSequences(fasta_file)
+    flanking_seqs = flanking_sequencer.get_flanking_sequences_from_bed(bed_file)
 
     embeddings = {}
     for name, (forward_seq, reverse_seq) in flanking_seqs:
