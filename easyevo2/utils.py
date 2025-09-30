@@ -31,7 +31,7 @@ def check_cuda(device: str) -> None:
                     raise ValueError(msg)
             except (ValueError, IndexError):
                 msg = f"Invalid CUDA device format: {device}. Expected format: 'cuda' or 'cuda:X'"
-                raise ValueError(msg)
+                raise ValueError(msg) from None
         else:
             # Just "cuda" - check if any GPU is available
             if torch.cuda.device_count() == 0:

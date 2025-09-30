@@ -104,7 +104,7 @@ class ExonTransform:
 
             if sequence is None:
                 msg = f"Chromosome {chrom} not found in FASTA file"
-                raise ValueError(msg)
+                raise ValueError(msg) from None
 
         # Reverse complement if on negative strand
         if strand == "-":
