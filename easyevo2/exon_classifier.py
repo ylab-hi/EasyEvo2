@@ -65,7 +65,7 @@ def get_final_token_embedding(sequence, model, layer_name, device):
             input_ids, return_embeddings=True, layer_names=["blocks.26.mlp.l3"]
         )
         print(f"{embeddings=}")
-        print(f"{embeddings2[layer_name].shape=}")
+        print(f"{embeddings[layer_name].shape=}")
         print(f"shape={embeddings[layer_name][0, -1, :].shape}")
 
         print(f"{embeddings2['blocks.26.mlp.l3']=}")
