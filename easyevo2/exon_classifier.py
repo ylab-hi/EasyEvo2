@@ -62,6 +62,8 @@ def get_final_token_embedding(sequence, model, layer_name, device):
             input_ids, return_embeddings=True, layer_names=[layer_name]
         )
         print(embeddings)
+        print(f"embeddings[layer_name][0, -1, :]: {embeddings[layer_name][0, -1, :]}")
+        print(f"embeddings.items(): {embeddings.items()}")
     return (
         embeddings[layer_name][0, -1, :].cpu().to(torch.float32).numpy()
     )  # shape: (hidden_dim,
