@@ -44,7 +44,7 @@ class FlankingSequences:
         with bed_file.open("r") as f:
             for line in f:
                 name, chrom, start = line.strip().split("\t")
-                yield name, self.flank(chrom, int(start))
+                yield f"{name}_{chrom}_{start}", self.flank(chrom, int(start))
 
 
 def get_final_token_embedding(sequence, model, layer_name, device):
