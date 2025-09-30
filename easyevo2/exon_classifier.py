@@ -61,6 +61,7 @@ def get_final_token_embedding(sequence, model, layer_name, device):
         _, embeddings = model(
             input_ids, return_embeddings=True, layer_names=[layer_name]
         )
+        print(embeddings)
     return (
         embeddings[layer_name][0, -1, :].cpu().to(torch.float32).numpy()
     )  # shape: (hidden_dim,
@@ -69,13 +70,18 @@ def get_final_token_embedding(sequence, model, layer_name, device):
 def classify_exons(
     bed_file: Path,
     fasta_file: Path,
-    model_type: ModelType,
     layer_name: Annotated[
         str,
         typer.Argument(
             help="Layer name to extract embeddings from.",
         ),
     ],
+    model_type: Annotated[
+        ModelType,
+        typer.Option(
+            help="Model type to use for embedding.",
+        ),
+    ] = ModelType.evo2_7b,
     output_file: Annotated[
         Path | None,
         typer.Option(help="Output file to save the exon classifier results."),
