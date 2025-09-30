@@ -65,7 +65,7 @@ def embed(
     """Embed a FASTA or FASTQ file."""
     # Load the model
     if layer_name is None:
-        layer_name = ["blocks.28.mlp.l3"]
+        layer_name = ["blocks.26"]
 
     check_cuda(device)
 
