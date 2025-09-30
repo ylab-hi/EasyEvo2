@@ -38,7 +38,7 @@ def get_seq_from_fx_to_dict(filename: Path | str) -> dict[str, str]:
     tuple
         Name, sequence, and quality score (if FASTQ) for each entry.
     """
-    fx = pyfastx.Fastx(filename)
+    fx = pyfastx.Fastx(filename, uppercase=True)
     return dict(fx)
 
 
