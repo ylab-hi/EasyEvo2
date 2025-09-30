@@ -63,21 +63,6 @@ def get_final_token_embedding(sequence, model, layer_name, device):
         _, embeddings = model(
             input_ids, return_embeddings=True, layer_names=[layer_name]
         )
-
-        _, embeddings2 = model(
-            input_ids, return_embeddings=True, layer_names=["blocks.26.mlp.l3"]
-        )
-
-        print(embeddings)
-        print(f"shape of embeddings: {embeddings[layer_name].shape}")
-        print(f"embeddings[layer_name][0, -1, :]: {embeddings[layer_name][0, -1, :]}")
-        print(f"embeddings.items(): {embeddings.items()}")
-
-        print(f"embeddings2: {embeddings2}")
-        print(f"shape of embeddings2: {embeddings2['blocks.26.mlp.l3'].shape}")
-        print(f"embeddings2['blocks.26.mlp.l3']: {embeddings2['blocks.26.mlp.l3']}")
-        print(f"embeddings2.items(): {embeddings2.items()}")
-
     return (
         embeddings[layer_name][0, -1, :].cpu().to(torch.float32).numpy()
     )  # shape: (hidden_dim,
@@ -87,11 +72,11 @@ def classify_exons(
     bed_file: Path,
     fasta_file: Path,
     layer_name: Annotated[
-        str,
-        typer.Argument(
+        str |None  ,
+        typer.Option(
             help="Layer name to extract embeddings from.",
         ),
-    ],
+    ] = "blocks.26",
     model_type: Annotated[
         ModelType,
         typer.Option(
