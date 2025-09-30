@@ -57,11 +57,14 @@ def get_final_token_embedding(sequence, model, layer_name, device):
         .unsqueeze(0)
         .to(device)
     )
+
+    print(model)
     with torch.no_grad():
         _, embeddings = model(
             input_ids, return_embeddings=True, layer_names=[layer_name]
         )
         print(embeddings)
+        print(f"shape of embeddings: {embeddings[layer_name].shape}")
         print(f"embeddings[layer_name][0, -1, :]: {embeddings[layer_name][0, -1, :]}")
         print(f"embeddings.items(): {embeddings.items()}")
     return (
