@@ -57,8 +57,6 @@ def get_final_token_embedding(sequence, model, layer_name, device):
         .unsqueeze(0)
         .to(device)
     )
-
-    print(model)
     with torch.no_grad():
         _, embeddings = model(
             input_ids, return_embeddings=True, layer_names=[layer_name]
