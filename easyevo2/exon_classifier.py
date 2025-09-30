@@ -105,6 +105,8 @@ def classify_exons(
     """Classify exons using the specified model and layer."""
     check_cuda(device)
     model = load_model(model_type)
+    print(f"{model.model.state_dict().keys()=}")
+
     flanking_sequencer = FlankingSequences(fasta_file)
     flanking_seqs = flanking_sequencer.get_flanking_sequences_from_bed(bed_file)
 
