@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# easyevo2 — run EasyEvo2 inside Docker, no local installation needed.
+#
+# Install:
+#   curl -fsSL https://raw.githubusercontent.com/ylab-hi/EasyEvo2/main/easyevo2-docker \
+#     -o ~/.local/bin/easyevo2 && chmod +x ~/.local/bin/easyevo2
+#
+# Usage:
+#   easyevo2 list-models
+#   easyevo2 vep variants.vcf reference.fa --model-type evo2_7b
+#   easyevo2 embed sequences.fa --output embeddings
+#   easyevo2 generate --species "Homo sapiens" --n-tokens 10000
+#
+# Environment variables:
+#   EASYEVO2_IMAGE   Docker image (default: ghcr.io/ylab-hi/easyevo2:latest)
+#                    Set to ghcr.io/ylab-hi/easyevo2:full for 20B/40B models.
+#   EASYEVO2_DEVICE  GPU devices passed to --gpus (default: all)
+#   HF_HOME          HuggingFace cache directory on the host
+#                    (default: ~/.cache/huggingface)
+
+set -euo pipefail
+
+IMAGE="${EASYEVO2_IMAGE:-ghcr.io/ylab-hi/easyevo2:latest}"
+GPU_DEVICE="${EASYEVO2_DEVICE:-all}"
+HF_CACHE="${HF_HOME:-${HOME}/.cache/huggingface}"
+
+exec docker run --rm \
+  --gpus "$GPU_DEVICE" \
+  --shm-size=16g \
+  -v "${HF_CACHE}:/app/.cache/huggingface" \
+  -v "$(pwd)":/data \
+  -w /data \
+  "$IMAGE" "$@"

@@ -7,7 +7,7 @@ import typer
 
 from easyevo2.dataloader import get_seq_from_fx
 from easyevo2.model import ModelType, load_model
-from easyevo2.utils import check_cuda, sliding_window
+from easyevo2.utils import check_cuda, log, sliding_window
 
 
 def score(
@@ -60,8 +60,8 @@ def score(
             help="Output file path for probabilities. If not specified, will use input filename with .probs.csv suffix.",
         ),
     ] = None,
-):
-    """Calculate probabilities for a FASTA or FASTQ file."""
+) -> None:
+    """Calculate sequence log-likelihoods with sliding windows."""
     try:
         check_cuda(device)
 
@@ -88,7 +88,7 @@ def score(
             output_filename = Path(filename).with_suffix(
                 f".windows_{window_size}_{step_size}.fa"
             )
-            print(
+            log.info(
                 f"Saving {len(sliding_window_sequences)} windows to {output_filename}"
             )
             # save the windows sequences to a fasta file
@@ -127,9 +127,9 @@ def score(
         with Path(metadata_path).open("w") as f:
             json.dump(metadata, f, indent=2)
 
-        print(f"Results saved to {output}")
-        print(f"Metadata saved to {metadata_path}")
+        log.info(f"Results saved to {output}")
+        log.info(f"Metadata saved to {metadata_path}")
 
     except Exception as e:
-        print(f"Error processing file: {e}")
+        log.error(f"Error processing file: {e}")
         raise typer.Exit(1) from e

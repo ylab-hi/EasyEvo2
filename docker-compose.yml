@@ -1,0 +1,36 @@
+services:
+  easyevo2:
+    image: ghcr.io/ylab-hi/easyevo2:latest
+    build:
+      context: .
+      target: light
+    volumes:
+      - ~/.cache/huggingface:/app/.cache/huggingface
+      - .:/data
+    working_dir: /data
+    shm_size: "16gb"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  easyevo2-full:
+    image: ghcr.io/ylab-hi/easyevo2:full
+    build:
+      context: .
+      target: full
+    volumes:
+      - ~/.cache/huggingface:/app/.cache/huggingface
+      - .:/data
+    working_dir: /data
+    shm_size: "16gb"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

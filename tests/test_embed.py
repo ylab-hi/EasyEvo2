@@ -117,7 +117,7 @@ def test_model_embed():
         assert layer_output.exists()
         assert layer_output.stat().st_size > 0
 
-        layer_embeddings = load_tensor(layer_output)
+        layer_embeddings = load_tensor(layer_output, device="cpu")
         assert isinstance(layer_embeddings, dict)
         assert all(
             isinstance(embedding, torch.Tensor)

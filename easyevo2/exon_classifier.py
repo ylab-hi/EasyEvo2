@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import numpy as np
 import pyfastx
@@ -8,7 +8,7 @@ import typer
 from transformers import AutoModel
 
 from easyevo2.model import ModelType, load_model
-from easyevo2.utils import check_cuda
+from easyevo2.utils import check_cuda, log
 
 
 class FlankingSequences:
@@ -24,22 +24,37 @@ class FlankingSequences:
         """
         Get the flanking sequence (upstream of the position).
 
-        Args:
-            chrom: The chromosome/sequence name.
-            pos: The position of the exon center, 1-based.
-            flanking_length: The length of the flanking sequence.
+        Parameters
+        ----------
+        chrom : str
+            The chromosome/sequence name.
+        pos : int
+            The position of the exon center, 1-based.
+        flanking_length : int, optional
+            The length of the flanking sequence. Defaults to 8192.
 
         Returns
         -------
-            The flanking sequence excluding the position.
+        tuple of (str, str)
+            Forward and reverse flanking sequences.
         """
         return self.fasta.flank(chrom, pos, pos, flanking_length)
 
     def get_flanking_sequences_from_bed(self, bed_file: Path):
         """
-        Get the flanking sequences from a BED file and a FASTA file.
+        Get flanking sequences from a BED file and a FASTA file.
 
-        The Bed file include three columns: name, chrom, start.
+        The BED file should contain three columns: name, chrom, start.
+
+        Parameters
+        ----------
+        bed_file : Path
+            Path to the BED file.
+
+        Yields
+        ------
+        tuple of (str, tuple of (str, str))
+            Identifier and forward/reverse flanking sequences.
         """
         with bed_file.open("r") as f:
             for line in f:
@@ -47,8 +62,28 @@ class FlankingSequences:
                 yield f"{name}_{chrom}_{start}", self.flank(chrom, int(start))
 
 
-def get_final_token_embedding(sequence, model, layer_name, device):
-    """Get the final token embedding of a sequence."""
+def get_final_token_embedding(
+    sequence: str, model: Any, layer_name: str, device: str
+) -> np.ndarray:
+    """
+    Get the final token embedding of a sequence.
+
+    Parameters
+    ----------
+    sequence : str
+        The DNA sequence to embed.
+    model : Any
+        The Evo2 model instance.
+    layer_name : str
+        Name of the layer to extract embeddings from.
+    device : str
+        Device to run inference on.
+
+    Returns
+    -------
+    numpy.ndarray
+        The embedding vector of the final token with shape ``(hidden_dim,)``.
+    """
     input_ids = (
         torch.tensor(
             model.tokenizer.tokenize(sequence),
@@ -57,21 +92,21 @@ def get_final_token_embedding(sequence, model, layer_name, device):
         .unsqueeze(0)
         .to(device)
     )
-    with torch.no_grad():
+    with torch.inference_mode():
         _, embeddings = model(
             input_ids, return_embeddings=True, layer_names=[layer_name]
         )
 
     return (
         embeddings[layer_name][0, -1, :].cpu().to(torch.float32).numpy()
-    )  # shape: (hidden_dim,
+    )  # shape: (hidden_dim,)
 
 
 def classify_exons(
     bed_file: Path,
     fasta_file: Path,
     layer_name: Annotated[
-        str |None  ,
+        str | None,
         typer.Option(
             help="Layer name to extract embeddings from.",
         ),
@@ -93,10 +128,10 @@ def classify_exons(
         ),
     ] = "cuda:0",
 ) -> None:
-    """Classify exons using the specified model and layer."""
+    """Classify exonic positions using Evo2 embeddings."""
     check_cuda(device)
     model = load_model(model_type)
-    print(f"{model.model.state_dict().keys()=}")
+    log.debug(f"Model state dict keys: {model.model.state_dict().keys()}")
 
     flanking_sequencer = FlankingSequences(fasta_file)
     flanking_seqs = flanking_sequencer.get_flanking_sequences_from_bed(bed_file)
@@ -123,7 +158,7 @@ def classify_exons(
             .unsqueeze(1)
             .to(device)
         )
-        with torch.no_grad():
+        with torch.inference_mode():
             probs[name] = exon_classifier(embedding_tensor)["logits"].item()
 
     if output_file is None:

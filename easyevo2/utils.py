@@ -16,7 +16,19 @@ log = logging.getLogger("easyevo2")
 
 
 def check_cuda(device: str) -> None:
-    """Check if the specified GPU is available."""
+    """
+    Check if the specified GPU is available.
+
+    Parameters
+    ----------
+    device : str
+        Device string (e.g., ``'cpu'``, ``'cuda'``, or ``'cuda:0'``).
+
+    Raises
+    ------
+    ValueError
+        If CUDA is not available or the specified GPU index is out of range.
+    """
     if device.startswith("cuda"):
         if not torch.cuda.is_available():
             msg = "CUDA is not available on this system"
@@ -24,23 +36,28 @@ def check_cuda(device: str) -> None:
 
         # Handle both "cuda" and "cuda:X" formats
         if ":" in device:
-            try:
-                gpu_index = int(device.split(":")[1])
-                if gpu_index >= torch.cuda.device_count():
-                    msg = f"GPU index {gpu_index} is out of range. Available GPUs: {torch.cuda.device_count()}"
-                    raise ValueError(msg)
-            except (ValueError, IndexError):
+            parts = device.split(":")
+            if len(parts) != 2 or not parts[1].isdigit():
                 msg = f"Invalid CUDA device format: {device}. Expected format: 'cuda' or 'cuda:X'"
-                raise ValueError(msg) from None
-        else:
-            # Just "cuda" - check if any GPU is available
-            if torch.cuda.device_count() == 0:
-                msg = "No CUDA devices available"
                 raise ValueError(msg)
+            gpu_index = int(parts[1])
+            if gpu_index >= torch.cuda.device_count():
+                msg = f"GPU index {gpu_index} is out of range. Available GPUs: {torch.cuda.device_count()}"
+                raise ValueError(msg)
+        elif torch.cuda.device_count() == 0:
+            msg = "No CUDA devices available"
+            raise ValueError(msg)
 
 
 def clear_gpu_memory(device: str) -> None:
-    """Clear GPU memory and run garbage collection."""
+    """
+    Clear GPU memory and run garbage collection.
+
+    Parameters
+    ----------
+    device : str
+        Device string (e.g., ``'cpu'`` or ``'cuda:0'``).
+    """
     if device.startswith("cuda"):
         torch.cuda.empty_cache()
     gc.collect()
@@ -50,16 +67,21 @@ def validate_sequence(
     seq: str, min_length: int = 1, max_length: int | None = None
 ) -> bool:
     """
-    Validate a sequence for processing.
+    Validate a DNA/RNA sequence for processing.
 
-    Args:
-        seq: The sequence to validate
-        min_length: Minimum allowed sequence length
-        max_length: Maximum allowed sequence length (None for no limit)
+    Parameters
+    ----------
+    seq : str
+        The sequence to validate.
+    min_length : int, optional
+        Minimum allowed sequence length. Defaults to 1.
+    max_length : int or None, optional
+        Maximum allowed sequence length. ``None`` means no limit.
 
     Returns
     -------
-        True if sequence is valid, False otherwise
+    bool
+        ``True`` if the sequence is valid, ``False`` otherwise.
     """
     if not seq or len(seq) < min_length:
         return False
@@ -76,12 +98,15 @@ def get_memory_usage(device: str) -> dict[str, float]:
     """
     Get current GPU memory usage for monitoring.
 
-    Args:
-        device: Device string ('cpu' or 'cuda:X')
+    Parameters
+    ----------
+    device : str
+        Device string (``'cpu'`` or ``'cuda:X'``).
 
     Returns
     -------
-        Dictionary with memory usage information
+    dict of str to float
+        Dictionary with memory usage information in GB.
     """
     memory_info = {}
 
@@ -96,28 +121,36 @@ def get_memory_usage(device: str) -> dict[str, float]:
 
 
 def sliding_window(
-    sequences: Iterable[tuple[str, str]],
+    sequences: Iterable[tuple],
     window_size: int,
     step_size: int,
     *,
     use_sequence_without_windows: bool = False,
 ) -> Generator[tuple[str, str]]:
     """
-    Slide a window of size `window_size` over the sequences with a step size of `step_size`.
+    Slide a window over sequences with a given step size.
 
-    Args:
-        sequences: Iterable of (name, sequence) tuples
-        window_size: Size of the sliding window
-        step_size: Number of positions to move the window
-        use_sequence_without_windows: If True, yield sequences with windows removed instead of windows
+    Parameters
+    ----------
+    sequences : Iterable of tuple of (str, str)
+        Iterable of ``(name, sequence)`` tuples.
+    window_size : int
+        Size of the sliding window in nucleotides.
+    step_size : int
+        Number of positions to advance the window each step.
+    use_sequence_without_windows : bool, optional
+        If ``True``, yield sequences with windows removed instead of
+        the windows themselves. Defaults to ``False``.
 
-    Returns
-    -------
-        Generator of tuples of the form (name, sequence)
+    Yields
+    ------
+    tuple of (str, str)
+        ``(name, sequence)`` tuples for each window or remainder.
 
     Raises
     ------
-        ValueError: If window_size or step_size is invalid
+    ValueError
+        If *window_size* or *step_size* is less than 1.
     """
     if window_size < 1:
         msg = "window_size must be at least 1"

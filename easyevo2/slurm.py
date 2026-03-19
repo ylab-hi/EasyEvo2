@@ -14,7 +14,7 @@ def create_slurm_script(
     command: str = "",
     gpu_count: int = 0,
     gpu_type: str = "",
-    modules: list | None = None,
+    modules: list[str] | None = None,
     conda_env: str = "",
     email: str = "",
     email_type: str = "NONE",
@@ -22,31 +22,51 @@ def create_slurm_script(
     working_dir: str = "",
 ) -> str:
     """
-    Create an optimized SLURM script for submitting a job to a SLURM scheduler with support for GPU acceleration.
+    Create a SLURM job script with GPU acceleration support.
 
-    Args:
-            job_name (str): Name of the job.
-            output_file (str): Path to the output file.
-            error_file (str): Path to the error file.
-            partition (str): Partition name.
-            time_limit (str): Time limit for the job (e.g., "01:00:00" for 1 hour).
-            nodes (int, optional): Number of nodes to use. Defaults to 1.
-            tasks_per_node (int, optional): Number of tasks per node. Defaults to 1.
-            cpus_per_task (int, optional): Number of CPUs per task. Defaults to 1.
-            memory (str, optional): Memory requirement (e.g., "4G"). Defaults to "4G".
-            command (str, optional): Command to execute. Defaults to "".
-            gpu_count (int, optional): Number of GPUs to request. Defaults to 0.
-            gpu_type (str, optional): Type of GPU to request (e.g., "v100", "a100"). Defaults to "".
-            modules (list, optional): List of modules to load. Defaults to None.
-            conda_env (str, optional): Conda environment to activate. Defaults to "".
-            email (str, optional): Email for job notifications. Defaults to "".
-            email_type (str, optional): When to send email notifications (e.g., "BEGIN,END,FAIL"). Defaults to "NONE".
-            account (str, optional): Account to charge the job to. Defaults to "".
-            working_dir (str, optional): Working directory for the job. Defaults to "".
+    Parameters
+    ----------
+    job_name : str
+        Name of the job.
+    output_file : str
+        Path to the standard output file.
+    error_file : str
+        Path to the standard error file.
+    partition : str
+        Partition name.
+    time_limit : str
+        Time limit for the job (e.g., ``"01:00:00"`` for 1 hour).
+    nodes : int, optional
+        Number of nodes to use. Defaults to 1.
+    tasks_per_node : int, optional
+        Number of tasks per node. Defaults to 1.
+    cpus_per_task : int, optional
+        Number of CPUs per task. Defaults to 1.
+    memory : str, optional
+        Memory requirement (e.g., ``"4G"``). Defaults to ``"4G"``.
+    command : str, optional
+        Command to execute. Defaults to ``""``.
+    gpu_count : int, optional
+        Number of GPUs to request. Defaults to 0.
+    gpu_type : str, optional
+        Type of GPU to request (e.g., ``"v100"``, ``"a100"``). Defaults to ``""``.
+    modules : list of str or None, optional
+        List of modules to load. Defaults to ``None``.
+    conda_env : str, optional
+        Conda environment to activate. Defaults to ``""``.
+    email : str, optional
+        Email for job notifications. Defaults to ``""``.
+    email_type : str, optional
+        When to send email (e.g., ``"BEGIN,END,FAIL"``). Defaults to ``"NONE"``.
+    account : str, optional
+        Account to charge the job to. Defaults to ``""``.
+    working_dir : str, optional
+        Working directory for the job. Defaults to ``""``.
 
     Returns
     -------
-            str: Path to the generated SLURM script.
+    str
+        Path to the generated SLURM script file.
     """
     # Build SLURM script with core settings
     slurm_script = "#!/bin/bash\n"
@@ -64,7 +84,7 @@ def create_slurm_script(
     # Add optional parameters if provided
     if gpu_count > 0:
         slurm_script += (
-            f"#SBATCH --gres=gpu:{gpu_type + ',' if gpu_type else ''}{gpu_count}\n"
+            f"#SBATCH --gres=gpu:{gpu_type + ':' if gpu_type else ''}{gpu_count}\n"
         )
 
     if email and email_type:
