@@ -6,13 +6,17 @@ LABEL org.opencontainers.image.source="https://github.com/ylab-hi/EasyEvo2" \
       org.opencontainers.image.licenses="MIT"
 
 ENV HF_HOME=/app/.cache/huggingface \
-    PIP_ROOT_USER_ACTION=ignore
+    UV_SYSTEM_PYTHON=1 \
+    UV_NO_CACHE=1
 
-RUN pip install --no-cache-dir evo2
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+RUN uv pip install evo2
 
 WORKDIR /app
 COPY . .
-RUN pip install --no-cache-dir .
+RUN uv pip install .
 
 # Verify installation
 RUN easyevo2 list-models
@@ -29,28 +33,34 @@ LABEL org.opencontainers.image.source="https://github.com/ylab-hi/EasyEvo2" \
 
 ENV DEBIAN_FRONTEND=noninteractive \
     HF_HOME=/app/.cache/huggingface \
-    PIP_ROOT_USER_ACTION=ignore
+    UV_SYSTEM_PYTHON=1 \
+    UV_NO_CACHE=1
 
+# Install minimal build dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    software-properties-common git && \
-    add-apt-repository -y ppa:deadsnakes/ppa && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-    python3.12 python3.12-dev python3-pip && \
+    apt-get install -y --no-install-recommends git && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 && \
-    python3 -m pip install --no-cache-dir --upgrade pip setuptools wheel
+# Install uv (static binary, no dependencies)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Install torch BEFORE flash-attn (flash-attn compiles against torch)
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu128
-RUN pip install --no-cache-dir flash-attn==2.8.0.post2 --no-build-isolation
-RUN pip install --no-cache-dir evo2
+# Install Python 3.12 via uv
+RUN uv python install 3.12 && \
+    uv python pin 3.12
 
+# Install torch first (flash-attn compiles against it)
+RUN uv pip install torch --index-url https://download.pytorch.org/whl/cu128
+
+# Install flash-attn (long compile, separate layer for caching)
+RUN uv pip install flash-attn==2.8.0.post2 --no-build-isolation
+
+# Install evo2
+RUN uv pip install evo2
+
+# Install easyevo2
 WORKDIR /app
 COPY . .
-RUN pip install --no-cache-dir .
+RUN uv pip install .
 
 # Verify installation
 RUN easyevo2 list-models
