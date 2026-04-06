@@ -76,5 +76,12 @@ def test_windows_without_windows():
         use_sequence_without_windows=use_sequence_without_windows,
     )
 
+    count = 0
     for seq in sliding_window_sequences:
-        print(seq)
+        assert isinstance(seq, tuple)
+        assert len(seq) == 2
+        assert isinstance(seq[0], str)
+        assert isinstance(seq[1], str)
+        assert len(seq[1]) > 0
+        count += 1
+    assert count > 0

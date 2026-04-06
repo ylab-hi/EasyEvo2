@@ -108,14 +108,14 @@ def load_tensor(
         msg = f"No tensor file found at {filepath}"
         raise FileNotFoundError(msg)
 
-    # Set the device based on user preference or availability
+    # Default to CPU for safety; use CUDA only when explicitly requested
     if device is None:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = "cpu"
 
     # If tensor_name is provided, load just that tensor
     if tensor_name is not None:
         with safe_open(filepath, framework="pt", device=device) as f:
-            if tensor_name not in f:
+            if tensor_name not in f.keys():  # noqa: SIM118 - safe_open doesn't support `in` directly
                 msg = f"Tensor '{tensor_name}' not found in {filepath}"
                 raise KeyError(msg)
             return f.get_tensor(tensor_name)

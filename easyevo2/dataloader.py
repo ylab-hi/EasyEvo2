@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from pathlib import Path
 
 import pyfastx
@@ -6,7 +6,9 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 
-def get_seq_from_fx(filename: Path | str):
+def get_seq_from_fx(
+    filename: Path | str,
+) -> Generator[tuple[str, str, str | None]]:
     """
     Read a FASTA or FASTQ file using pyfastx.
 
@@ -17,8 +19,8 @@ def get_seq_from_fx(filename: Path | str):
 
     Yields
     ------
-    tuple
-        Name, sequence, and quality score (if FASTQ) for each entry.
+    tuple of (str, str, str or None)
+        Name, sequence, and quality score (``None`` for FASTA) for each entry.
     """
     fx = pyfastx.Fastx(filename, uppercase=True)
     yield from fx
@@ -26,17 +28,17 @@ def get_seq_from_fx(filename: Path | str):
 
 def get_seq_from_fx_to_dict(filename: Path | str) -> dict[str, str]:
     """
-    Read a FASTA or FASTQ file using pyfastx.
+    Read a FASTA or FASTQ file into a dictionary.
 
     Parameters
     ----------
     filename : Path or str
         Path to the FASTA or FASTQ file.
 
-    Yields
-    ------
-    tuple
-        Name, sequence, and quality score (if FASTQ) for each entry.
+    Returns
+    -------
+    dict of str to str
+        Mapping of sequence names to sequences.
     """
     fx = pyfastx.Fastx(filename, uppercase=True)
     return dict(fx)
@@ -50,12 +52,12 @@ class FxDataset(Dataset):
     ----------
     fx_file : Path or str
         Path to the FASTA or FASTQ file.
-    max_length : int | None
+    max_length : int or None
         Maximum sequence length. Longer sequences will be truncated.
-    transform : Callable | None
+    transform : Callable or None
         Optional transform to be applied on a sequence.
     preload : bool
-        If True, preload all sequences into memory for faster access.
+        If ``True``, preload all sequences into memory for faster access.
     """
 
     def __init__(
@@ -68,17 +70,19 @@ class FxDataset(Dataset):
     ):
         self.fx_file = str(fx_file)
         self.fx = pyfastx.Fastx(self.fx_file)
-        self.names = []
-        self.indices = []
-        self.sequences = {} if preload else None
+        self.names: list[str] = []
+        self.indices: list[int] = []
+        self.sequences: dict[str, str] | None = {} if preload else None
 
         # Pre-process file to get sequence names and indices
-        for i, (name, seq, _) in enumerate(self.fx):
+        for i, item in enumerate(self.fx):
+            name = item[0]
+            seq = item[1]
             self.names.append(name)
             self.indices.append(i)
 
             # Preload sequences if requested
-            if preload:
+            if preload and self.sequences is not None:
                 if max_length and len(seq) > max_length:
                     seq = seq[:max_length]
                 self.sequences[name] = seq
@@ -109,13 +113,14 @@ class FxDataset(Dataset):
         name = self.names[idx]
 
         # Get sequence - either from preloaded cache or by reading from file
-        if self.preload:
+        if self.preload and self.sequences is not None:
             seq = self.sequences[name]
         else:
             # Get the actual sequence using pyfastx
             # Use more optimized approach by accessing Fastx with index
-            for i, (_, seq, _) in enumerate(pyfastx.Fastx(self.fx_file)):
+            for i, item in enumerate(pyfastx.Fastx(self.fx_file)):
                 if i == self.indices[idx]:
+                    seq = item[1]
                     break
 
             # Truncate sequence if necessary
@@ -131,7 +136,7 @@ class FxDataset(Dataset):
 
 class FxDataLoader:
     """
-    PyTorch Data loader for FASTA/FASTQ files.
+    PyTorch DataLoader for FASTA/FASTQ files.
 
     This class provides a convenient way to load FASTA/FASTQ files
     for use with PyTorch models to generate embeddings.
@@ -144,22 +149,22 @@ class FxDataLoader:
         How many samples per batch to load.
     shuffle : bool
         Whether to shuffle the data.
-    max_length : int | None
+    max_length : int or None
         Maximum sequence length. Longer sequences will be truncated.
     num_workers : int
         How many subprocesses to use for data loading.
-    transform : Callable | None
+    transform : Callable or None
         Optional transform to be applied on a sequence.
-    collate_fn : Callable | None
+    collate_fn : Callable or None
         Merges a list of samples to form a mini-batch.
     pin_memory : bool
-        If True, the data loader will copy Tensors into CUDA pinned memory.
+        If ``True``, the data loader will copy Tensors into CUDA pinned memory.
     preload : bool
-        If True, preload all sequences into memory for faster access.
+        If ``True``, preload all sequences into memory for faster access.
     prefetch_factor : int
-        Number of batches to prefetch if num_workers > 0.
+        Number of batches to prefetch if *num_workers* > 0.
     use_gpu : bool
-        If True and GPU is available, utilize CUDA for data processing.
+        If ``True`` and GPU is available, utilize CUDA for data processing.
     """
 
     def __init__(
@@ -250,8 +255,7 @@ class FxDataLoader:
         return len(self.dataloader)
 
 
-# Utility function for GPU memory management
-def get_gpu_memory_info():
+def get_gpu_memory_info() -> dict:
     """
     Get GPU memory usage information.
 
@@ -266,7 +270,7 @@ def get_gpu_memory_info():
     # Get GPU count
     gpu_count = torch.cuda.device_count()
 
-    info = {"available": True, "gpu_count": gpu_count, "devices": {}}
+    info: dict = {"available": True, "gpu_count": gpu_count, "devices": {}}
 
     # Get memory info for each GPU
     for i in range(gpu_count):

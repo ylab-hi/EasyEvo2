@@ -4,8 +4,28 @@ build-backend = "hatchling.build"
 
 [project]
 name = "easyevo2"
-version = "0.2.0"
-description = "To use Evo2 easily in HPC"
+version = "0.3.0"
+description = "A command-line toolkit for genomic sequence analysis with Evo 2 and other biological foundation models"
+authors = [
+    { name = "Yangyang Li", email = "yangyang.li@northwestern.edu" },
+]
+keywords = [
+    "bioinformatics",
+    "genomics",
+    "evo2",
+    "variant-effect-prediction",
+    "DNA-language-model",
+    "embeddings",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Typing :: Typed",
+]
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
@@ -13,11 +33,11 @@ dependencies = [
 	"click>=8.1.8",
 	"numpy>=2.2.5",
 	"pyfastx>=2.2.0",
-	"rich==13.9.2",
+	"rich>=13.9.2",
 	"safetensors>=0.5.3",
 	"typer>=0.15.2",
 	"pandas>=2.2.0",
-	"pandas-stubs>=2.2.3.250527",
+	"pysam>=0.22.0",
 	"torch>=2.5.1",
 	"transformers>=4.56.2",
 ]
@@ -150,4 +170,4 @@ filterwarnings = [
 xfail_strict = true
 
 [dependency-groups]
-dev = ["ipdb>=0.13.13", "pytest>=8.3.5"]
+dev = ["ipdb>=0.13.13", "pandas-stubs>=2.2.3.250527", "pytest>=8.3.5"]

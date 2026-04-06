@@ -1,3 +1,4 @@
+import gc
 from collections import defaultdict
 from pathlib import Path
 from typing import Annotated
@@ -61,8 +62,8 @@ def embed(
             help="Merge the individual embeddings into a single file.",
         ),
     ] = False,
-):
-    """Embed a FASTA or FASTQ file."""
+) -> None:
+    """Extract sequence embeddings from a FASTA or FASTQ file."""
     # Load the model
     if layer_name is None:
         layer_name = ["blocks.26"]
@@ -101,7 +102,7 @@ def embed(
 
             with torch.inference_mode():
                 # Get embeddings
-                outputs, embeddings = model(
+                _outputs, embeddings = model(
                     input_ids, return_embeddings=True, layer_names=layer_name
                 )
 
@@ -164,9 +165,6 @@ def embed(
             log.info(f"Saved embeddings for {idx} sequences")
             # Clear embeddings from memory after saving
             embeddings_with_name.clear()
-
-            # force garbage collection
-            import gc
 
             gc.collect()
             if torch.cuda.is_available():
@@ -234,8 +232,6 @@ def embed(
 
     # Final cleanup
     del embeddings_with_name
-    import gc
-
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
