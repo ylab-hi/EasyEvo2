@@ -170,4 +170,4 @@ filterwarnings = [
 xfail_strict = true
 
 [dependency-groups]
-dev = ["ipdb>=0.13.13", "pandas-stubs>=2.2.3.250527", "pytest>=8.3.5"]
+dev = ["ipdb>=0.13.13", "pandas-stubs>=2.2.3.250527", "pytest>=8.3.5", "ruff>=0.13.0"]
