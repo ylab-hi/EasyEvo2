@@ -35,6 +35,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HF_HOME=/app/.cache/huggingface \
     UV_PYTHON_PREFERENCE=only-managed \
     UV_PYTHON_INSTALL_DIR=/python \
+    UV_BREAK_SYSTEM_PACKAGES=1 \
     UV_NO_CACHE=1
 
 # Install minimal build dependencies
