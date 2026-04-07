@@ -33,7 +33,8 @@ LABEL org.opencontainers.image.source="https://github.com/ylab-hi/EasyEvo2" \
 
 ENV DEBIAN_FRONTEND=noninteractive \
     HF_HOME=/app/.cache/huggingface \
-    UV_SYSTEM_PYTHON=1 \
+    UV_PYTHON_PREFERENCE=only-managed \
+    UV_PYTHON_INSTALL_DIR=/python \
     UV_NO_CACHE=1
 
 # Install minimal build dependencies
@@ -44,23 +45,24 @@ RUN apt-get update && \
 # Install uv (static binary, no dependencies)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Install Python 3.12 via uv
+# Install Python 3.12 via uv and symlink into a stable PATH location
 RUN uv python install 3.12 && \
-    uv python pin 3.12
+    ln -s $(uv python find 3.12) /usr/local/bin/python3.12 && \
+    ln -s /usr/local/bin/python3.12 /usr/local/bin/python3
 
 # Install torch first (flash-attn compiles against it)
-RUN uv pip install torch --index-url https://download.pytorch.org/whl/cu128
+RUN uv pip install --python 3.12 --system torch --index-url https://download.pytorch.org/whl/cu128
 
 # Install flash-attn (long compile, separate layer for caching)
-RUN uv pip install flash-attn==2.8.0.post2 --no-build-isolation
+RUN uv pip install --python 3.12 --system flash-attn==2.8.0.post2 --no-build-isolation
 
 # Install evo2
-RUN uv pip install evo2
+RUN uv pip install --python 3.12 --system evo2
 
 # Install easyevo2
 WORKDIR /app
 COPY . .
-RUN uv pip install .
+RUN uv pip install --python 3.12 --system .
 
 # Verify installation
 RUN easyevo2 list-models
