@@ -54,8 +54,9 @@ RUN uv python install 3.12 && \
 # Install torch first (flash-attn compiles against it)
 RUN uv pip install --python 3.12 --system torch --index-url https://download.pytorch.org/whl/cu128
 
-# Install flash-attn (long compile, separate layer for caching)
-RUN uv pip install --python 3.12 --system flash-attn==2.8.0.post2 --no-build-isolation
+# Install flash-attn build deps, then flash-attn (long compile, separate layer for caching)
+RUN uv pip install --python 3.12 --system packaging setuptools wheel && \
+    uv pip install --python 3.12 --system flash-attn==2.8.0.post2 --no-build-isolation
 
 # Install evo2
 RUN uv pip install --python 3.12 --system evo2
